@@ -57,11 +57,13 @@ class _BooksView extends StatelessWidget {
         title: const Text('确认删除吗？'),
         actions: [
           TextButton(
-              onPressed: () => Navigator.pop(ctx, false),
-              child: const Text('取消')),
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('取消'),
+          ),
           FilledButton(
-              onPressed: () => Navigator.pop(ctx, true),
-              child: const Text('删除')),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('删除'),
+          ),
         ],
       ),
     );
@@ -100,10 +102,12 @@ class _BooksView extends StatelessWidget {
                           isDense: true,
                         ),
                         items: state.categories
-                            .map((c) => DropdownMenuItem(
-                                  value: c.id,
-                                  child: Text(c.name),
-                                ))
+                            .map(
+                              (c) => DropdownMenuItem(
+                                value: c.id,
+                                child: Text(c.name),
+                              ),
+                            )
                             .toList(),
                         onChanged: (v) {
                           if (v != null) cubit.selectCategory(v);
@@ -120,17 +124,20 @@ class _BooksView extends StatelessWidget {
                 ),
                 const SizedBox(height: 12),
                 if (state.error != null)
-                  Text('错误：${state.error}',
-                      style: const TextStyle(color: Colors.red)),
+                  Text(
+                    '错误：${state.error}',
+                    style: const TextStyle(color: Colors.red),
+                  ),
                 Expanded(
-                  child: state.loading
-                      ? const Center(child: CircularProgressIndicator())
-                      : SingleChildScrollView(
-                          child: SingleChildScrollView(
-                            scrollDirection: Axis.horizontal,
+                  child: Container(
+                    width: double.infinity,
+                    child: state.loading
+                        ? const Center(child: CircularProgressIndicator())
+                        : SingleChildScrollView(
                             child: DataTable(
+                              dataRowMaxHeight: double.infinity,
                               columns: const [
-                                DataColumn(label: Text('ID')),
+                                // DataColumn(label: Text('ID')),
                                 DataColumn(label: Text('Name')),
                                 DataColumn(label: Text('封面')),
                                 DataColumn(label: Text('isFree')),
@@ -143,7 +150,7 @@ class _BooksView extends StatelessWidget {
                                   .toList(),
                             ),
                           ),
-                        ),
+                  ),
                 ),
               ],
             );
@@ -154,59 +161,88 @@ class _BooksView extends StatelessWidget {
   }
 
   DataRow _row(BuildContext context, Book b) {
-    return DataRow(cells: [
-      DataCell(ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 160),
-        child: Text(b.id, overflow: TextOverflow.ellipsis),
-      )),
-      DataCell(Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text('Title: ${b.title}'),
-          Text('subtitle: ${b.subtitle}',
-              style: const TextStyle(fontSize: 12, color: Colors.grey)),
-        ],
-      )),
-      DataCell(b.coverUrl.isEmpty
-          ? const SizedBox(width: 48)
-          : Image.network(
-              Env.r2Url(b.coverUrl),
-              width: 48,
-              height: 64,
-              fit: BoxFit.cover,
-              errorBuilder: (_, _, _) =>
-                  const Icon(Icons.broken_image, size: 24),
-            )),
-      DataCell(b.isFree
-          ? const Text('免费', style: TextStyle(color: Colors.green))
-          : const Text('付费', style: TextStyle(color: Colors.red))),
-      DataCell(ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 200),
-        child: Wrap(
-          spacing: 4,
-          runSpacing: 4,
-          children: b.units
-              .map((u) => Chip(
-                    label: Text(u.title),
-                    visualDensity: VisualDensity.compact,
-                  ))
-              .toList(),
-        ),
-      )),
-      DataCell(Text('${b.order}')),
-      DataCell(Row(
-        children: [
-          TextButton(
-              onPressed: () => _edit(context, initial: b),
-              child: const Text('编辑')),
-          TextButton(
-            onPressed: () => _delete(context, b),
-            style: TextButton.styleFrom(foregroundColor: Colors.red),
-            child: const Text('删除'),
+    return DataRow(
+      cells: [
+        // DataCell(
+        //   ConstrainedBox(
+        //     constraints: const BoxConstraints(maxWidth: 160),
+        //     child: Text(b.id, overflow: TextOverflow.ellipsis),
+        //   ),
+        // ),
+        DataCell(
+          ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 360),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Title: ${b.title}'),
+                Text(
+                  'subtitle: ${b.subtitle}',
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(fontSize: 12, color: Colors.grey),
+                ),
+              ],
+            ),
           ),
-        ],
-      )),
-    ]);
+        ),
+        DataCell(
+          b.coverUrl.isEmpty
+              ? const SizedBox(width: 48)
+              : Image.network(
+                  Env.r2Url(b.coverUrl),
+                  width: 48,
+                  height: 64,
+                  fit: BoxFit.cover,
+                  errorBuilder: (_, _, _) =>
+                      const Icon(Icons.broken_image, size: 24),
+                ),
+        ),
+        DataCell(
+          b.isFree
+              ? const Text('免费', style: TextStyle(color: Colors.green))
+              : const Text('付费', style: TextStyle(color: Colors.red)),
+        ),
+        DataCell(
+          Padding(
+            padding: EdgeInsets.only(top: 10, bottom: 10),
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 200),
+              child: Wrap(
+                spacing: 2,
+                runSpacing: 1,
+                children: b.units
+                    .map(
+                      (u) => Chip(
+                        label: Text(
+                          u.title,
+                          style: const TextStyle(fontSize: 10),
+                        ),
+                        visualDensity: VisualDensity.compact,
+                      ),
+                    )
+                    .toList(),
+              ),
+            ),
+          ),
+        ),
+        DataCell(Text('${b.order}')),
+        DataCell(
+          Row(
+            children: [
+              TextButton(
+                onPressed: () => _edit(context, initial: b),
+                child: const Text('编辑'),
+              ),
+              TextButton(
+                onPressed: () => _delete(context, b),
+                style: TextButton.styleFrom(foregroundColor: Colors.red),
+                child: const Text('删除'),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
   }
 }

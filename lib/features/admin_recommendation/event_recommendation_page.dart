@@ -54,11 +54,13 @@ class _EventView extends StatelessWidget {
         title: const Text('确认删除吗？'),
         actions: [
           TextButton(
-              onPressed: () => Navigator.pop(ctx, false),
-              child: const Text('取消')),
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('取消'),
+          ),
           FilledButton(
-              onPressed: () => Navigator.pop(ctx, true),
-              child: const Text('删除')),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('删除'),
+          ),
         ],
       ),
     );
@@ -105,24 +107,29 @@ class _EventView extends StatelessWidget {
                 ),
                 const SizedBox(height: 12),
                 if (state.error != null)
-                  Text('错误：${state.error}',
-                      style: const TextStyle(color: Colors.red)),
+                  Text(
+                    '错误：${state.error}',
+                    style: const TextStyle(color: Colors.red),
+                  ),
                 Expanded(
-                  child: state.loading
-                      ? const Center(child: CircularProgressIndicator())
-                      : SingleChildScrollView(
-                          child: DataTable(
-                            columns: const [
-                              DataColumn(label: Text('推荐日期')),
-                              DataColumn(label: Text('事件名')),
-                              DataColumn(label: Text('推荐单词')),
-                              DataColumn(label: Text('推荐图')),
-                              DataColumn(label: Text('是否激活')),
-                              DataColumn(label: Text('操作')),
-                            ],
-                            rows: data.map((r) => _row(context, r)).toList(),
+                  child: Container(
+                    width: double.infinity,
+                    child: state.loading
+                        ? const Center(child: CircularProgressIndicator())
+                        : SingleChildScrollView(
+                            child: DataTable(
+                              columns: const [
+                                DataColumn(label: Text('推荐日期')),
+                                DataColumn(label: Text('事件名')),
+                                DataColumn(label: Text('推荐单词')),
+                                DataColumn(label: Text('推荐图')),
+                                DataColumn(label: Text('是否激活')),
+                                DataColumn(label: Text('操作')),
+                              ],
+                              rows: data.map((r) => _row(context, r)).toList(),
+                            ),
                           ),
-                        ),
+                  ),
                 ),
               ],
             );
@@ -133,41 +140,50 @@ class _EventView extends StatelessWidget {
   }
 
   DataRow _row(BuildContext context, EventRecommendation r) {
-    return DataRow(cells: [
-      DataCell(Text(r.specificDate)),
-      DataCell(Text(r.eventName ?? '')),
-      DataCell(Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text('wordID: ${r.wordId ?? ''}'),
-          Text('wordText: ${r.wordText}'),
-        ],
-      )),
-      DataCell(r.imageKey.isEmpty
-          ? const SizedBox(width: 40)
-          : Image.network(
-              Env.r2Url(r.imageKey),
-              width: 40,
-              height: 64,
-              fit: BoxFit.cover,
-              errorBuilder: (_, _, _) =>
-                  const Icon(Icons.broken_image, size: 20),
-            )),
-      DataCell(Text(r.isActive ? '是' : '否')),
-      DataCell(Row(
-        children: [
-          TextButton(
-              onPressed: () => _edit(context, row: r),
-              child: const Text('编辑')),
-          TextButton(
-            onPressed: () => _delete(context, r.specificDate),
-            style: TextButton.styleFrom(foregroundColor: Colors.red),
-            child: const Text('删除'),
+    return DataRow(
+      cells: [
+        DataCell(Text(r.specificDate)),
+        DataCell(Text(r.eventName ?? '')),
+        DataCell(
+          Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('wordID: ${r.wordId ?? ''}'),
+              Text('wordText: ${r.wordText}'),
+            ],
           ),
-        ],
-      )),
-    ]);
+        ),
+        DataCell(
+          r.imageKey.isEmpty
+              ? const SizedBox(width: 40)
+              : Image.network(
+                  Env.r2Url(r.imageKey),
+                  width: 40,
+                  height: 64,
+                  fit: BoxFit.cover,
+                  errorBuilder: (_, _, _) =>
+                      const Icon(Icons.broken_image, size: 20),
+                ),
+        ),
+        DataCell(Text(r.isActive ? '是' : '否')),
+        DataCell(
+          Row(
+            children: [
+              TextButton(
+                onPressed: () => _edit(context, row: r),
+                child: const Text('编辑'),
+              ),
+              TextButton(
+                onPressed: () => _delete(context, r.specificDate),
+                style: TextButton.styleFrom(foregroundColor: Colors.red),
+                child: const Text('删除'),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
   }
 }
 
@@ -234,8 +250,7 @@ class _EventEditDialogState extends State<_EventEditDialog> {
       lastDate: DateTime(now.year + 5),
     );
     if (picked != null) {
-      setState(() =>
-          _specificDate = DateFormat('yyyy-MM-dd').format(picked));
+      setState(() => _specificDate = DateFormat('yyyy-MM-dd').format(picked));
     }
   }
 
@@ -306,7 +321,10 @@ class _EventEditDialogState extends State<_EventEditDialog> {
               const Text('推荐图'),
               const SizedBox(height: 8),
               _EventImagePicker(
-                  imageKey: _imageKey, file: _file, onPick: _pick),
+                imageKey: _imageKey,
+                file: _file,
+                onPick: _pick,
+              ),
               const SizedBox(height: 12),
               TextField(
                 controller: _eventName,
@@ -375,7 +393,8 @@ class _EventEditDialogState extends State<_EventEditDialog> {
               ? const SizedBox(
                   height: 18,
                   width: 18,
-                  child: CircularProgressIndicator(strokeWidth: 2))
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
               : const Text('确认'),
         ),
       ],

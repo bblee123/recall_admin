@@ -33,7 +33,7 @@ class UserInfo {
     this.avatarUrl = '',
   });
 
-  final int id;
+  final String id;
   final String email;
   final String nickname;
   final String avatarUrl;

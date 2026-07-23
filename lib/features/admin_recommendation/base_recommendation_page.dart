@@ -54,11 +54,13 @@ class _BaseView extends StatelessWidget {
         title: const Text('确认删除吗？'),
         actions: [
           TextButton(
-              onPressed: () => Navigator.pop(ctx, false),
-              child: const Text('取消')),
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('取消'),
+          ),
           FilledButton(
-              onPressed: () => Navigator.pop(ctx, true),
-              child: const Text('删除')),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('删除'),
+          ),
         ],
       ),
     );
@@ -105,24 +107,29 @@ class _BaseView extends StatelessWidget {
                 ),
                 const SizedBox(height: 12),
                 if (state.error != null)
-                  Text('错误：${state.error}',
-                      style: const TextStyle(color: Colors.red)),
+                  Text(
+                    '错误：${state.error}',
+                    style: const TextStyle(color: Colors.red),
+                  ),
                 Expanded(
-                  child: state.loading
-                      ? const Center(child: CircularProgressIndicator())
-                      : SingleChildScrollView(
-                          child: DataTable(
-                            columns: const [
-                              DataColumn(label: Text('Day Index')),
-                              DataColumn(label: Text('Word')),
-                              DataColumn(label: Text('推荐图')),
-                              DataColumn(label: Text('文本颜色')),
-                              DataColumn(label: Text('季节')),
-                              DataColumn(label: Text('操作')),
-                            ],
-                            rows: data.map((r) => _row(context, r)).toList(),
+                  child: Container(
+                    width: double.infinity,
+                    child: state.loading
+                        ? const Center(child: CircularProgressIndicator())
+                        : SingleChildScrollView(
+                            child: DataTable(
+                              columns: const [
+                                DataColumn(label: Text('Day Index')),
+                                DataColumn(label: Text('Word')),
+                                DataColumn(label: Text('推荐图')),
+                                DataColumn(label: Text('文本颜色')),
+                                DataColumn(label: Text('季节')),
+                                DataColumn(label: Text('操作')),
+                              ],
+                              rows: data.map((r) => _row(context, r)).toList(),
+                            ),
                           ),
-                        ),
+                  ),
                 ),
               ],
             );
@@ -133,51 +140,58 @@ class _BaseView extends StatelessWidget {
   }
 
   DataRow _row(BuildContext context, BaseRecommendation r) {
-    return DataRow(cells: [
-      DataCell(Text('第 ${r.dayIndex} 天')),
-      DataCell(Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text('wordID: ${r.wordId ?? ''}'),
-          Text('wordText: ${r.wordText}'),
-        ],
-      )),
-      DataCell(r.imageKey.isEmpty
-          ? const SizedBox(width: 40)
-          : Image.network(
-              Env.r2Url(r.imageKey),
-              width: 40,
-              height: 64,
-              fit: BoxFit.cover,
-              errorBuilder: (_, _, _) =>
-                  const Icon(Icons.broken_image, size: 20),
-            )),
-      DataCell(Row(
-        children: [
-          Container(
-            width: 16,
-            height: 16,
-            color: _parseColor(r.textColor),
+    return DataRow(
+      cells: [
+        DataCell(Text('第 ${r.dayIndex} 天')),
+        DataCell(
+          Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('wordID: ${r.wordId ?? ''}'),
+              Text('wordText: ${r.wordText}'),
+            ],
           ),
-          const SizedBox(width: 6),
-          Text(r.textColor),
-        ],
-      )),
-      DataCell(Text(r.season)),
-      DataCell(Row(
-        children: [
-          TextButton(
-              onPressed: () => _edit(context, row: r),
-              child: const Text('编辑')),
-          TextButton(
-            onPressed: () => _delete(context, r.dayIndex),
-            style: TextButton.styleFrom(foregroundColor: Colors.red),
-            child: const Text('删除'),
+        ),
+        DataCell(
+          r.imageKey.isEmpty
+              ? const SizedBox(width: 40)
+              : Image.network(
+                  Env.r2Url(r.imageKey),
+                  width: 40,
+                  height: 64,
+                  fit: BoxFit.cover,
+                  errorBuilder: (_, _, _) =>
+                      const Icon(Icons.broken_image, size: 20),
+                ),
+        ),
+        DataCell(
+          Row(
+            children: [
+              Container(width: 16, height: 16, color: _parseColor(r.textColor)),
+              const SizedBox(width: 6),
+              Text(r.textColor),
+            ],
           ),
-        ],
-      )),
-    ]);
+        ),
+        DataCell(Text(r.season)),
+        DataCell(
+          Row(
+            children: [
+              TextButton(
+                onPressed: () => _edit(context, row: r),
+                child: const Text('编辑'),
+              ),
+              TextButton(
+                onPressed: () => _delete(context, r.dayIndex),
+                style: TextButton.styleFrom(foregroundColor: Colors.red),
+                child: const Text('删除'),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
   }
 }
 
@@ -377,7 +391,8 @@ class _BaseEditDialogState extends State<_BaseEditDialog> {
               ? const SizedBox(
                   height: 18,
                   width: 18,
-                  child: CircularProgressIndicator(strokeWidth: 2))
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
               : const Text('确认'),
         ),
       ],

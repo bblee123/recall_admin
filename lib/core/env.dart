@@ -9,7 +9,7 @@ class Env {
   static const String apiBaseUrl = 'http://127.0.0.1:3000';
   static const String adminBaseUrl = 'http://127.0.0.1:3004';
   static const String r2BaseUrl =
-      'https://pub-586bac9d20bf41729ae4c142137986ff.r2.dev';
+      'https://pub-f83f97baa906439497f5a72d8696712d.r2.dev';
 
   /// 拼接 R2 资源完整地址；已是 http(s) 直接返回。
   static String r2Url(String? key) {

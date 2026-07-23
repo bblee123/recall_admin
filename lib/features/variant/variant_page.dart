@@ -76,11 +76,13 @@ class _VariantViewState extends State<_VariantView> {
         title: const Text('确定要删除这个音频吗？'),
         actions: [
           TextButton(
-              onPressed: () => Navigator.pop(ctx, false),
-              child: const Text('取消')),
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('取消'),
+          ),
           FilledButton(
-              onPressed: () => Navigator.pop(ctx, true),
-              child: const Text('删除')),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('删除'),
+          ),
         ],
       ),
     );
@@ -166,7 +168,9 @@ class _VariantViewState extends State<_VariantView> {
                     ),
                     const SizedBox(width: 8),
                     FilledButton(
-                        onPressed: cubit.searchNow, child: const Text('搜索')),
+                      onPressed: cubit.searchNow,
+                      child: const Text('搜索'),
+                    ),
                     const Spacer(),
                     FilledButton.tonal(
                       onPressed: () => _edit(),
@@ -183,21 +187,26 @@ class _VariantViewState extends State<_VariantView> {
                 if (state.error != null)
                   Padding(
                     padding: const EdgeInsets.all(8),
-                    child: Text('错误：${state.error}',
-                        style: const TextStyle(color: Colors.red)),
+                    child: Text(
+                      '错误：${state.error}',
+                      style: const TextStyle(color: Colors.red),
+                    ),
                   ),
                 Expanded(
-                  child: state.loading
-                      ? const Center(child: CircularProgressIndicator())
-                      : _VariantTable(
-                          state: state,
-                          onSelect: cubit.toggleSelect,
-                          onPlay: _play,
-                          onUpload: _upload,
-                          onDelete: _delete,
-                          onGenerate: _generate,
-                          onEdit: (v) => _edit(initial: v),
-                        ),
+                  child: Container(
+                    width: double.infinity,
+                    child: state.loading
+                        ? const Center(child: CircularProgressIndicator())
+                        : _VariantTable(
+                            state: state,
+                            onSelect: cubit.toggleSelect,
+                            onPlay: _play,
+                            onUpload: _upload,
+                            onDelete: _delete,
+                            onGenerate: _generate,
+                            onEdit: (v) => _edit(initial: v),
+                          ),
+                  ),
                 ),
                 Paginator(
                   page: state.page,
@@ -238,26 +247,25 @@ class _VariantTable extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SingleChildScrollView(
-      child: SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
-        child: DataTable(
-          columns: const [
-            DataColumn(label: Text('选择')),
-            DataColumn(label: Text('No.')),
-            DataColumn(label: Text('音频')),
-            DataColumn(label: Text('汉字')),
-            DataColumn(label: Text('拼音')),
-            DataColumn(label: Text('释义')),
-            DataColumn(label: Text('例句')),
-            DataColumn(label: Text('原始拼音')),
-            DataColumn(label: Text('操作')),
-          ],
-          rows: [
-            for (var i = 0; i < state.items.length; i++)
-              _buildRow(state.items[i],
-                  (state.page - 1) * state.pageSize + i + 1),
-          ],
-        ),
+      child: DataTable(
+        columns: const [
+          DataColumn(label: Text('选择')),
+          DataColumn(label: Text('No.')),
+          DataColumn(label: Text('音频')),
+          DataColumn(label: Text('汉字')),
+          DataColumn(label: Text('拼音')),
+          DataColumn(label: Text('释义')),
+          DataColumn(label: Text('例句')),
+          DataColumn(label: Text('原始拼音')),
+          DataColumn(label: Text('操作')),
+        ],
+        rows: [
+          for (var i = 0; i < state.items.length; i++)
+            _buildRow(
+              state.items[i],
+              (state.page - 1) * state.pageSize + i + 1,
+            ),
+        ],
       ),
     );
   }
@@ -265,34 +273,51 @@ class _VariantTable extends StatelessWidget {
   DataRow _buildRow(Variant v, int index) {
     return DataRow(
       cells: [
-        DataCell(Checkbox(
-          value: state.selectedIds.contains(v.id),
-          onChanged: (val) => onSelect(v.id, val ?? false),
-        )),
+        DataCell(
+          Checkbox(
+            value: state.selectedIds.contains(v.id),
+            onChanged: (val) => onSelect(v.id, val ?? false),
+          ),
+        ),
         DataCell(Text('$index')),
-        DataCell(_AudioCell(
-          variant: v,
-          onPlay: onPlay,
-          onUpload: onUpload,
-          onDelete: onDelete,
-          onGenerate: onGenerate,
-        )),
+        DataCell(
+          _AudioCell(
+            variant: v,
+            onPlay: onPlay,
+            onUpload: onUpload,
+            onDelete: onDelete,
+            onGenerate: onGenerate,
+          ),
+        ),
         DataCell(Text(v.charText)),
         DataCell(Text(v.pinyin)),
-        DataCell(ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 320),
-          child: Text(v.meaning, overflow: TextOverflow.ellipsis, maxLines: 2),
-        )),
-        DataCell(ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 200),
-          child: Text(v.samples ?? '',
-              overflow: TextOverflow.ellipsis, maxLines: 2),
-        )),
+        DataCell(
+          ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 320),
+            child: Text(
+              v.meaning,
+              overflow: TextOverflow.ellipsis,
+              maxLines: 2,
+            ),
+          ),
+        ),
+        DataCell(
+          ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 200),
+            child: Text(
+              v.samples ?? '',
+              overflow: TextOverflow.ellipsis,
+              maxLines: 2,
+            ),
+          ),
+        ),
         DataCell(Text(v.pinyinRaw)),
-        DataCell(IconButton(
-          icon: const Icon(Icons.edit, size: 18),
-          onPressed: () => onEdit(v),
-        )),
+        DataCell(
+          IconButton(
+            icon: const Icon(Icons.edit, size: 18),
+            onPressed: () => onEdit(v),
+          ),
+        ),
       ],
     );
   }

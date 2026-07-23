@@ -22,7 +22,7 @@ Map<String, dynamic> _$LoginRequestToJson(LoginRequest instance) =>
     };
 
 UserInfo _$UserInfoFromJson(Map<String, dynamic> json) => UserInfo(
-  id: (json['id'] as num).toInt(),
+  id: json['id'] as String,
   email: json['email'] as String,
   nickname: json['nickname'] as String? ?? '',
   avatarUrl: json['avatarUrl'] as String? ?? '',

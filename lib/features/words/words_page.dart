@@ -59,11 +59,13 @@ class _WordsViewState extends State<_WordsView> {
         title: const Text('你确定要删除这个单词吗?'),
         actions: [
           TextButton(
-              onPressed: () => Navigator.pop(ctx, false),
-              child: const Text('取消')),
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('取消'),
+          ),
           FilledButton(
-              onPressed: () => Navigator.pop(ctx, true),
-              child: const Text('删除')),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('删除'),
+          ),
         ],
       ),
     );
@@ -113,7 +115,9 @@ class _WordsViewState extends State<_WordsView> {
                     ),
                     const SizedBox(width: 8),
                     FilledButton(
-                        onPressed: cubit.searchNow, child: const Text('搜索')),
+                      onPressed: cubit.searchNow,
+                      child: const Text('搜索'),
+                    ),
                     const Spacer(),
                     FilledButton.tonal(
                       onPressed: () => _edit(),
@@ -125,17 +129,22 @@ class _WordsViewState extends State<_WordsView> {
                 if (state.error != null)
                   Padding(
                     padding: const EdgeInsets.all(8),
-                    child: Text('错误：${state.error}',
-                        style: const TextStyle(color: Colors.red)),
+                    child: Text(
+                      '错误：${state.error}',
+                      style: const TextStyle(color: Colors.red),
+                    ),
                   ),
                 Expanded(
-                  child: state.loading
-                      ? const Center(child: CircularProgressIndicator())
-                      : _WordTable(
-                          items: state.items,
-                          onEdit: (w) => _edit(initial: w),
-                          onDelete: _delete,
-                        ),
+                  child: Container(
+                    width: double.infinity,
+                    child: state.loading
+                        ? const Center(child: CircularProgressIndicator())
+                        : _WordTable(
+                            items: state.items,
+                            onEdit: (w) => _edit(initial: w),
+                            onDelete: _delete,
+                          ),
+                  ),
                 ),
                 Paginator(
                   page: state.page,
@@ -167,55 +176,66 @@ class _WordTable extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SingleChildScrollView(
-      child: SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
-        child: DataTable(
-          columns: const [
-            DataColumn(label: Text('No.')),
-            DataColumn(label: Text('词汇')),
-            DataColumn(label: Text('拼音')),
-            DataColumn(label: Text('原始拼音')),
-            DataColumn(label: Text('释义')),
-            DataColumn(label: Text('多音字')),
-            DataColumn(label: Text('操作')),
-          ],
-          rows: [
-            for (var i = 0; i < items.length; i++)
-              DataRow(cells: [
+      child: DataTable(
+        columns: const [
+          DataColumn(label: Text('No.')),
+          DataColumn(label: Text('词汇')),
+          DataColumn(label: Text('拼音')),
+          DataColumn(label: Text('原始拼音')),
+          DataColumn(label: Text('释义')),
+          DataColumn(label: Text('多音字')),
+          DataColumn(label: Text('操作')),
+        ],
+        rows: [
+          for (var i = 0; i < items.length; i++)
+            DataRow(
+              cells: [
                 DataCell(Text('${i + 1}')),
                 DataCell(Text(items[i].text)),
                 DataCell(Text(items[i].pinyin ?? '')),
                 DataCell(Text(items[i].pinyinRaw ?? '')),
-                DataCell(ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 320),
-                  child: Text(items[i].translation ?? '',
-                      overflow: TextOverflow.ellipsis, maxLines: 2),
-                )),
-                DataCell(items[i].isPolyphone
-                    ? const Chip(
-                        label: Text('是'),
-                        backgroundColor: Color(0xFFD7F5DD),
-                        visualDensity: VisualDensity.compact,
-                      )
-                    : const Chip(
-                        label: Text('否'),
-                        visualDensity: VisualDensity.compact,
-                      )),
-                DataCell(Row(
-                  children: [
-                    TextButton(
-                        onPressed: () => onEdit(items[i]),
-                        child: const Text('修改')),
-                    TextButton(
-                      onPressed: () => onDelete(items[i]),
-                      style: TextButton.styleFrom(foregroundColor: Colors.red),
-                      child: const Text('删除'),
+                DataCell(
+                  ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 320),
+                    child: Text(
+                      items[i].translation ?? '',
+                      overflow: TextOverflow.ellipsis,
+                      maxLines: 2,
                     ),
-                  ],
-                )),
-              ]),
-          ],
-        ),
+                  ),
+                ),
+                DataCell(
+                  items[i].isPolyphone
+                      ? const Chip(
+                          label: Text('是'),
+                          backgroundColor: Color(0xFFD7F5DD),
+                          visualDensity: VisualDensity.compact,
+                        )
+                      : const Chip(
+                          label: Text('否'),
+                          visualDensity: VisualDensity.compact,
+                        ),
+                ),
+                DataCell(
+                  Row(
+                    children: [
+                      TextButton(
+                        onPressed: () => onEdit(items[i]),
+                        child: const Text('修改'),
+                      ),
+                      TextButton(
+                        onPressed: () => onDelete(items[i]),
+                        style: TextButton.styleFrom(
+                          foregroundColor: Colors.red,
+                        ),
+                        child: const Text('删除'),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+        ],
       ),
     );
   }

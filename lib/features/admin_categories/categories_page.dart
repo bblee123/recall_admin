@@ -83,8 +83,7 @@ class _CategoriesView extends StatelessWidget {
               ),
               actions: [
                 TextButton(
-                  onPressed:
-                      submitting ? null : () => Navigator.of(ctx).pop(),
+                  onPressed: submitting ? null : () => Navigator.of(ctx).pop(),
                   child: const Text('取消'),
                 ),
                 FilledButton(
@@ -125,11 +124,13 @@ class _CategoriesView extends StatelessWidget {
         title: const Text('确认删除吗？'),
         actions: [
           TextButton(
-              onPressed: () => Navigator.pop(ctx, false),
-              child: const Text('取消')),
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('取消'),
+          ),
           FilledButton(
-              onPressed: () => Navigator.pop(ctx, true),
-              child: const Text('删除')),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('删除'),
+          ),
         ],
       ),
     );
@@ -162,61 +163,74 @@ class _CategoriesView extends StatelessWidget {
                 ),
                 const SizedBox(height: 12),
                 if (state.error != null)
-                  Text('错误：${state.error}',
-                      style: const TextStyle(color: Colors.red)),
+                  Text(
+                    '错误：${state.error}',
+                    style: const TextStyle(color: Colors.red),
+                  ),
                 Expanded(
-                  child: state.loading
-                      ? const Center(child: CircularProgressIndicator())
-                      : SingleChildScrollView(
-                          child: DataTable(
-                            columns: const [
-                              DataColumn(label: Text('ID')),
-                              DataColumn(label: Text('Name')),
-                              DataColumn(label: Text('slug')),
-                              DataColumn(label: Text('order')),
-                              DataColumn(label: Text('操作')),
-                            ],
-                            rows: state.items
-                                .map(
-                                  (c) => DataRow(cells: [
-                                    DataCell(Text(c.id)),
-                                    DataCell(
-                                      InkWell(
-                                        onTap: () => context.go(
-                                          '/admin/books?categoryId=${c.id}',
-                                        ),
-                                        child: Text(
-                                          c.name,
-                                          style: const TextStyle(
-                                            color: Colors.indigo,
-                                            decoration:
-                                                TextDecoration.underline,
+                  child: Container(
+                    width: double.infinity,
+                    child: state.loading
+                        ? const Center(child: CircularProgressIndicator())
+                        : SingleChildScrollView(
+                            child: DataTable(
+                              columns: const [
+                                DataColumn(label: Text('ID')),
+                                DataColumn(label: Text('Name')),
+                                DataColumn(label: Text('slug')),
+                                DataColumn(label: Text('order')),
+                                DataColumn(label: Text('操作')),
+                              ],
+                              rows: state.items
+                                  .map(
+                                    (c) => DataRow(
+                                      cells: [
+                                        DataCell(Text(c.id)),
+                                        DataCell(
+                                          InkWell(
+                                            onTap: () => context.go(
+                                              '/admin/books?categoryId=${c.id}',
+                                            ),
+                                            child: Text(
+                                              c.name,
+                                              style: const TextStyle(
+                                                color: Colors.indigo,
+                                                decoration:
+                                                    TextDecoration.underline,
+                                              ),
+                                            ),
                                           ),
                                         ),
-                                      ),
-                                    ),
-                                    DataCell(Text(c.slug)),
-                                    DataCell(Text('${c.order}')),
-                                    DataCell(Row(
-                                      children: [
-                                        TextButton(
-                                          onPressed: () =>
-                                              _openDialog(context, row: c),
-                                          child: const Text('编辑'),
-                                        ),
-                                        TextButton(
-                                          onPressed: () => _delete(context, c),
-                                          style: TextButton.styleFrom(
-                                              foregroundColor: Colors.red),
-                                          child: const Text('删除'),
+                                        DataCell(Text(c.slug)),
+                                        DataCell(Text('${c.order}')),
+                                        DataCell(
+                                          Row(
+                                            children: [
+                                              TextButton(
+                                                onPressed: () => _openDialog(
+                                                  context,
+                                                  row: c,
+                                                ),
+                                                child: const Text('编辑'),
+                                              ),
+                                              TextButton(
+                                                onPressed: () =>
+                                                    _delete(context, c),
+                                                style: TextButton.styleFrom(
+                                                  foregroundColor: Colors.red,
+                                                ),
+                                                child: const Text('删除'),
+                                              ),
+                                            ],
+                                          ),
                                         ),
                                       ],
-                                    )),
-                                  ]),
-                                )
-                                .toList(),
+                                    ),
+                                  )
+                                  .toList(),
+                            ),
                           ),
-                        ),
+                  ),
                 ),
               ],
             );
