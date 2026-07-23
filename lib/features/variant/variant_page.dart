@@ -1,6 +1,8 @@
+import 'package:data_table_2/data_table_2.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:oktoast/oktoast.dart';
+import 'package:recall_admin/utils/responsive.dart';
 
 import '../../core/audio/myenc_audio_service.dart';
 import '../../core/env.dart';
@@ -141,45 +143,60 @@ class _VariantViewState extends State<_VariantView> {
             return Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Row(
+                Flex(
+                  spacing: 10,
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  direction: context.responsive(
+                    sm: Axis.vertical,
+                    lg: Axis.horizontal,
+                  ),
                   children: [
-                    SegmentedButton<int>(
-                      segments: const [
-                        ButtonSegment(value: 1, label: Text('全部')),
-                        ButtonSegment(value: 2, label: Text('已生成')),
-                        ButtonSegment(value: 3, label: Text('未生成')),
-                      ],
-                      selected: {state.audioType},
-                      onSelectionChanged: (s) => cubit.setAudioType(s.first),
-                    ),
-                    const SizedBox(width: 12),
-                    SizedBox(
-                      width: 240,
-                      child: TextField(
-                        controller: _search,
-                        decoration: const InputDecoration(
-                          hintText: '请输入汉字 or 拼音',
-                          border: OutlineInputBorder(),
-                          isDense: true,
+                    Column(
+                      spacing: 10,
+                      children: [
+                        SegmentedButton<int>(
+                          segments: const [
+                            ButtonSegment(value: 1, label: Text('全部')),
+                            ButtonSegment(value: 2, label: Text('已生成')),
+                            ButtonSegment(value: 3, label: Text('未生成')),
+                          ],
+                          selected: {state.audioType},
+                          onSelectionChanged: (s) =>
+                              cubit.setAudioType(s.first),
                         ),
-                        onChanged: cubit.setSearch,
-                        onSubmitted: (_) => cubit.searchNow(),
-                      ),
+                        SizedBox(
+                          width: 240,
+                          child: TextField(
+                            controller: _search,
+                            decoration: const InputDecoration(
+                              hintText: '请输入汉字 or 拼音',
+                              border: OutlineInputBorder(),
+                              isDense: true,
+                            ),
+                            onChanged: cubit.setSearch,
+                            onSubmitted: (_) => cubit.searchNow(),
+                          ),
+                        ),
+                      ],
                     ),
-                    const SizedBox(width: 8),
-                    FilledButton(
-                      onPressed: cubit.searchNow,
-                      child: const Text('搜索'),
-                    ),
-                    const Spacer(),
-                    FilledButton.tonal(
-                      onPressed: () => _edit(),
-                      child: const Text('创建'),
-                    ),
-                    const SizedBox(width: 8),
-                    FilledButton.tonal(
-                      onPressed: _batch,
-                      child: const Text('AI Audios'),
+                    Row(
+                      spacing: 10,
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        FilledButton(
+                          onPressed: cubit.searchNow,
+                          child: const Text('搜索'),
+                        ),
+                        FilledButton.tonal(
+                          onPressed: () => _edit(),
+                          child: const Text('创建'),
+                        ),
+                        FilledButton.tonal(
+                          onPressed: _batch,
+                          child: const Text('AI Audios'),
+                        ),
+                      ],
                     ),
                   ],
                 ),
@@ -193,20 +210,17 @@ class _VariantViewState extends State<_VariantView> {
                     ),
                   ),
                 Expanded(
-                  child: Container(
-                    width: double.infinity,
-                    child: state.loading
-                        ? const Center(child: CircularProgressIndicator())
-                        : _VariantTable(
-                            state: state,
-                            onSelect: cubit.toggleSelect,
-                            onPlay: _play,
-                            onUpload: _upload,
-                            onDelete: _delete,
-                            onGenerate: _generate,
-                            onEdit: (v) => _edit(initial: v),
-                          ),
-                  ),
+                  child: state.loading
+                      ? const Center(child: CircularProgressIndicator())
+                      : _VariantTable(
+                          state: state,
+                          onSelect: cubit.toggleSelect,
+                          onPlay: _play,
+                          onUpload: _upload,
+                          onDelete: _delete,
+                          onGenerate: _generate,
+                          onEdit: (v) => _edit(initial: v),
+                        ),
                 ),
                 Paginator(
                   page: state.page,
@@ -246,27 +260,23 @@ class _VariantTable extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SingleChildScrollView(
-      child: DataTable(
-        columns: const [
-          DataColumn(label: Text('选择')),
-          DataColumn(label: Text('No.')),
-          DataColumn(label: Text('音频')),
-          DataColumn(label: Text('汉字')),
-          DataColumn(label: Text('拼音')),
-          DataColumn(label: Text('释义')),
-          DataColumn(label: Text('例句')),
-          DataColumn(label: Text('原始拼音')),
-          DataColumn(label: Text('操作')),
-        ],
-        rows: [
-          for (var i = 0; i < state.items.length; i++)
-            _buildRow(
-              state.items[i],
-              (state.page - 1) * state.pageSize + i + 1,
-            ),
-        ],
-      ),
+    return DataTable2(
+      minWidth: 1600,
+      columns: const [
+        DataColumn2(fixedWidth: 50, label: Text('选择')),
+        DataColumn2(fixedWidth: 50, label: Text('No.')),
+        DataColumn2(fixedWidth: 240, label: Text('音频')),
+        DataColumn2(fixedWidth: 100, label: Text('汉字')),
+        DataColumn2(fixedWidth: 100, label: Text('拼音')),
+        DataColumn2(label: Text('释义')),
+        DataColumn2(label: Text('例句')),
+        DataColumn2(fixedWidth: 120, label: Text('原始拼音')),
+        DataColumn2(fixedWidth: 80, label: Text('操作')),
+      ],
+      rows: [
+        for (var i = 0; i < state.items.length; i++)
+          _buildRow(state.items[i], (state.page - 1) * state.pageSize + i + 1),
+      ],
     );
   }
 

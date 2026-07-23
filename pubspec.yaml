@@ -48,6 +48,7 @@ dependencies:
   uuid: ^4.6.0
   intl: ^0.20.3
   path_drawing: ^1.0.1
+  data_table_2: ^2.7.2
 
 dev_dependencies:
   flutter_test:
