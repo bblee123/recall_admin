@@ -6,6 +6,9 @@ import 'package:oktoast/oktoast.dart';
 import 'core/audio/myenc_audio_service.dart';
 import 'core/di.dart';
 import 'core/router/app_router.dart';
+import 'features/recorder/service/audio_recorder_service.dart';
+import 'features/recorder/service/recorder_player_service.dart';
+import 'features/recorder/service/recorder_sink.dart';
 import 'data/repositories/book_repository.dart';
 import 'data/repositories/category_repository.dart';
 import 'data/repositories/character_repository.dart';
@@ -66,6 +69,11 @@ class _HanziToolAppState extends State<HanziToolApp> {
         RepositoryProvider<RecommendationRepository>.value(
             value: deps.recommendationRepository),
         RepositoryProvider<MyencAudioService>.value(value: deps.audioService),
+        RepositoryProvider<AudioRecorderService>.value(
+            value: deps.recorderService),
+        RepositoryProvider<RecorderPlayerService>.value(
+            value: deps.recorderPlayer),
+        RepositoryProvider<RecorderSink>.value(value: deps.recorderSink),
       ],
       child: BlocProvider<AuthCubit>.value(
         value: _authCubit,

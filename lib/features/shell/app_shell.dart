@@ -18,6 +18,7 @@ const List<_NavItem> _navItems = <_NavItem>[
   _NavItem('/', '文字', Icons.translate),
   _NavItem('/variant', '汉字释义', Icons.menu_book),
   _NavItem('/words', '词汇', Icons.abc),
+  _NavItem('/recorder-test', '录音测试', Icons.mic),
   _NavItem('/admin/categories', '书籍分类', Icons.category, admin: true),
   _NavItem('/admin/books', '书籍管理', Icons.library_books, admin: true),
   _NavItem('/admin/recommendation-base', '默认推荐', Icons.recommend,

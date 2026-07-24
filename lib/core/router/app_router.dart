@@ -7,6 +7,7 @@ import '../../features/admin_recommendation/base_recommendation_page.dart';
 import '../../features/admin_recommendation/event_recommendation_page.dart';
 import '../../features/home/home_page.dart';
 import '../../features/not_found/not_found_page.dart';
+import '../../features/recorder/recorder_test_page.dart';
 import '../../features/shell/app_shell.dart';
 import '../../features/variant/variant_page.dart';
 import '../../features/words/words_page.dart';
@@ -50,6 +51,10 @@ GoRouter buildRouter({
           GoRoute(
             path: '/words',
             pageBuilder: (c, s) => noTransition(const WordsPage()),
+          ),
+          GoRoute(
+            path: '/recorder-test',
+            pageBuilder: (c, s) => noTransition(const RecorderTestPage()),
           ),
           GoRoute(
             path: '/admin/categories',

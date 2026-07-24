@@ -49,6 +49,9 @@ dependencies:
   intl: ^0.20.3
   path_drawing: ^1.0.1
   data_table_2: ^2.7.2
+  record: ^7.1.1
+  path_provider: ^2.1.6
+  path: ^1.9.1
 
 dev_dependencies:
   flutter_test:

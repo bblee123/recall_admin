@@ -7,6 +7,9 @@ import '../data/repositories/character_repository.dart';
 import '../data/repositories/recommendation_repository.dart';
 import '../data/repositories/variant_repository.dart';
 import '../data/repositories/word_repository.dart';
+import '../features/recorder/service/audio_recorder_service.dart';
+import '../features/recorder/service/recorder_player_service.dart';
+import '../features/recorder/service/recorder_sink.dart';
 import 'audio/myenc_audio_service.dart';
 import 'network/dio_client.dart';
 import 'network/session_controller.dart';
@@ -21,6 +24,9 @@ class AppDependencies {
     required this.session,
     required this.dioClient,
     required this.audioService,
+    required this.recorderService,
+    required this.recorderPlayer,
+    required this.recorderSink,
     required this.characterRepository,
     required this.wordRepository,
     required this.variantRepository,
@@ -35,6 +41,9 @@ class AppDependencies {
   final SessionController session;
   final DioClient dioClient;
   final MyencAudioService audioService;
+  final AudioRecorderService recorderService;
+  final RecorderPlayerService recorderPlayer;
+  final RecorderSink recorderSink;
 
   final CharacterRepository characterRepository;
   final WordRepository wordRepository;
@@ -59,12 +68,20 @@ class AppDependencies {
     final audioService = MyencAudioService(dioClient.public);
     await audioService.ensureInitialized();
 
+    final recorderService = AudioRecorderService();
+    final recorderPlayer = RecorderPlayerService();
+    // 默认本地转存；将来接 Cloudflare R2 时替换为 R2Sink。
+    const recorderSink = LocalFileSink();
+
     return AppDependencies._(
       tokenStorage: tokenStorage,
       deviceInfo: deviceInfo,
       session: session,
       dioClient: dioClient,
       audioService: audioService,
+      recorderService: recorderService,
+      recorderPlayer: recorderPlayer,
+      recorderSink: recorderSink,
       characterRepository: CharacterRepository(dioClient),
       wordRepository: WordRepository(dioClient),
       variantRepository: VariantRepository(dioClient),
