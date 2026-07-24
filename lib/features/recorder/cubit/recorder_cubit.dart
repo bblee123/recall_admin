@@ -178,7 +178,12 @@ class RecorderCubit extends Cubit<RecorderState> {
     }
     emit(state.copyWith(busy: true, error: null));
     try {
-      final sink = _sink ?? LocalFileSink(directory: state.options.outputDir);
+      // 用户在 UI 里显式选了目录时，优先落到该本地目录；否则用注入的
+      // sink（默认落到资源库目录），最后兜底本地默认目录。
+      final outputDir = state.options.outputDir;
+      final sink = (outputDir != null && outputDir.isNotEmpty)
+          ? LocalFileSink(directory: outputDir)
+          : (_sink ?? LocalFileSink(directory: outputDir));
       final saved = await sink.save(File(tempPath), preferredName: preferredName);
       emit(state.copyWith(
         status: RecorderStatus.saved,
