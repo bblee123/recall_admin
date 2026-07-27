@@ -1,6 +1,8 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:record/record.dart';
 
+import '../service/audio_trimmer.dart';
+import '../service/pcm_waveform.dart';
 import '../service/recorder_options.dart';
 
 part 'recorder_state.freezed.dart';
@@ -69,6 +71,21 @@ abstract class RecorderState with _$RecorderState {
 
     /// 预览录音总时长。
     @Default(Duration.zero) Duration playbackDuration,
+
+    /// 停止后从文件解码出的完整波形包络（裁切与播放头的依据）。
+    WaveformData? waveform,
+
+    /// 是否正在解析波形。
+    @Default(false) bool analyzing,
+
+    /// 裁切区间起点（null 表示尚未初始化）。
+    Duration? trimStart,
+
+    /// 裁切区间终点。
+    Duration? trimEnd,
+
+    /// 波形横向缩放：每秒占多少像素。
+    @Default(0.0) double pxPerSecond,
     String? error,
   }) = _RecorderState;
 
@@ -77,9 +94,13 @@ abstract class RecorderState with _$RecorderState {
   /// 是否正在录音。
   bool get isRecording => status == RecorderStatus.recording;
 
-  /// 保存按钮是否可用：存在已停止的录音且不在忙碌中。
+  /// 保存按钮是否可用：存在已停止的录音、不在忙碌/解析中，且裁切区间合法。
   bool get canSave =>
-      (status == RecorderStatus.stopped) && tempPath != null && !busy;
+      (status == RecorderStatus.stopped) &&
+      tempPath != null &&
+      !busy &&
+      !analyzing &&
+      (!canTrim || trimRangeValid);
 
   /// 重置按钮是否可用：非空闲即可清空。
   bool get canReset => status != RecorderStatus.idle;
@@ -92,4 +113,34 @@ abstract class RecorderState with _$RecorderState {
   bool get isPlaying => playback == PlaybackStatus.playing;
 
   bool get isPaused => playback == PlaybackStatus.paused;
+
+  /// 波形总时长（以解码结果为准，回退到计时器时长）。
+  Duration get audioDuration => waveform?.duration ?? elapsed;
+
+  /// 当前编码是否支持裁切。
+  bool get codecSupportsTrim => options.codec.supportsTrim;
+
+  /// 是否具备裁切条件：波形已就绪且格式支持。
+  bool get canTrim => waveform != null && codecSupportsTrim;
+
+  /// 有效裁切起点（未设置时为 0）。
+  Duration get effectiveTrimStart => trimStart ?? Duration.zero;
+
+  /// 有效裁切终点（未设置时为全长）。
+  Duration get effectiveTrimEnd => trimEnd ?? audioDuration;
+
+  /// 裁切后时长。
+  Duration get trimmedDuration => effectiveTrimEnd - effectiveTrimStart;
+
+  /// 用户是否真的裁掉了内容（首尾任一端有偏移）。
+  bool get hasTrim {
+    if (!canTrim) return false;
+    const tolerance = Duration(milliseconds: 1);
+    final headTrimmed = effectiveTrimStart > tolerance;
+    final tailTrimmed = audioDuration - effectiveTrimEnd > tolerance;
+    return headTrimmed || tailTrimmed;
+  }
+
+  /// 裁切区间是否长于最小允许时长。
+  bool get trimRangeValid => trimmedDuration >= AudioTrimmer.minDuration;
 }

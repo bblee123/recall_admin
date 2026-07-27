@@ -29,12 +29,27 @@ class RecorderPlayerService {
   }
 
   /// 从头播放已加载的文件，返回句柄。
-  Future<SoundHandle?> play() async {
+  Future<SoundHandle?> play() => playFrom(Duration.zero);
+
+  /// 从 [start] 开始播放已加载的文件。
+  Future<SoundHandle?> playFrom(Duration start) async {
     final source = _source;
     if (source == null) return null;
     await _stopHandle();
-    _handle = SoLoud.instance.play(source);
-    return _handle;
+    final handle = SoLoud.instance.play(source);
+    _handle = handle;
+    if (start > Duration.zero) {
+      SoLoud.instance.seek(handle, start);
+    }
+    return handle;
+  }
+
+  /// 跳转到指定位置（需已有有效句柄）。
+  void seek(Duration position) {
+    final handle = _handle;
+    if (handle == null) return;
+    if (!SoLoud.instance.getIsValidVoiceHandle(handle)) return;
+    SoLoud.instance.seek(handle, position);
   }
 
   void pause() {

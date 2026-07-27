@@ -5,6 +5,8 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:record/record.dart';
 
 import '../service/audio_recorder_service.dart';
+import '../service/audio_trimmer.dart';
+import '../service/pcm_waveform.dart';
 import '../service/recorder_options.dart';
 import '../service/recorder_player_service.dart';
 import '../service/recorder_sink.dart';
@@ -22,8 +24,10 @@ class RecorderCubit extends Cubit<RecorderState> {
     /// 波形采样间隔。
     Duration amplitudeInterval = const Duration(milliseconds: 100),
 
-    /// 波形历史最大长度（超出丢弃最旧值）。
-    int maxAmplitudeSamples = 240,
+    /// 实时波形历史最大长度（超出丢弃最旧值）。
+    ///
+    /// 默认约 30 分钟，实际等同于不截断，便于录音中横向回看全程。
+    int maxAmplitudeSamples = 18000,
   })  : _service = service,
         _sink = sink,
         _player = player,
@@ -119,6 +123,10 @@ class RecorderCubit extends Cubit<RecorderState> {
         playback: PlaybackStatus.stopped,
         playbackPosition: Duration.zero,
         playbackDuration: Duration.zero,
+        waveform: null,
+        analyzing: false,
+        trimStart: null,
+        trimEnd: null,
         error: null,
       ));
     } catch (e) {
@@ -126,21 +134,101 @@ class RecorderCubit extends Cubit<RecorderState> {
     }
   }
 
-  /// 停止录音。
+  /// 停止录音，并解析波形以支持裁切。
   Future<void> stop() async {
     if (!state.isRecording) return;
     try {
       final path = await _service.stop();
       _stopwatch.stop();
       _ticker?.cancel();
+      final finalPath = path ?? state.tempPath;
       emit(state.copyWith(
         status: RecorderStatus.stopped,
-        tempPath: path ?? state.tempPath,
+        tempPath: finalPath,
         elapsed: _stopwatch.elapsed,
       ));
+      if (finalPath != null) {
+        await _analyzeWaveform(finalPath);
+      }
     } catch (e) {
       emit(state.copyWith(error: '停止录音失败：$e'));
     }
+  }
+
+  /// 从录音文件解码完整包络，作为裁切与播放头的依据。
+  ///
+  /// 实时振幅流只有 10 点/秒且会丢弃旧值，精度不足以定位裁切点。
+  Future<void> _analyzeWaveform(String path) async {
+    if (!state.options.codec.supportsTrim) {
+      // 压缩格式不解析，仅保留试听能力。
+      emit(state.copyWith(waveform: null, analyzing: false));
+      return;
+    }
+    emit(state.copyWith(analyzing: true, error: null));
+    try {
+      final waveform = await PcmWaveform.build(
+        path,
+        fallbackSampleRate: state.effectiveSampleRate ?? state.options.sampleRate.hz,
+        fallbackChannels: state.options.numChannels,
+      );
+      if (isClosed) return;
+      emit(state.copyWith(
+        waveform: waveform,
+        analyzing: false,
+        trimStart: Duration.zero,
+        trimEnd: waveform.duration,
+        playbackDuration: waveform.duration,
+      ));
+    } catch (e) {
+      if (isClosed) return;
+      emit(state.copyWith(analyzing: false, error: '波形解析失败：$e'));
+    }
+  }
+
+  /// 设置裁切起点（自动钳制，保证不越过终点且区间不过短）。
+  void setTrimStart(Duration value) {
+    if (!state.canTrim) return;
+    final maxStart = state.effectiveTrimEnd - AudioTrimmer.minDuration;
+    final clamped = _clampDuration(value, Duration.zero, maxStart);
+    emit(state.copyWith(trimStart: clamped));
+    if (state.playbackPosition < clamped) {
+      seekPreview(clamped);
+    }
+  }
+
+  /// 设置裁切终点。
+  void setTrimEnd(Duration value) {
+    if (!state.canTrim) return;
+    final minEnd = state.effectiveTrimStart + AudioTrimmer.minDuration;
+    final clamped = _clampDuration(value, minEnd, state.audioDuration);
+    emit(state.copyWith(trimEnd: clamped));
+    if (state.playbackPosition > clamped) {
+      seekPreview(clamped);
+    }
+  }
+
+  /// 还原为全长（取消裁切）。
+  void resetTrim() {
+    if (!state.canTrim) return;
+    emit(state.copyWith(
+      trimStart: Duration.zero,
+      trimEnd: state.audioDuration,
+    ));
+  }
+
+  /// 设置波形横向缩放（每秒像素数）。
+  void setZoom(double pxPerSecond) {
+    emit(state.copyWith(pxPerSecond: pxPerSecond.clamp(_minZoom, _maxZoom)));
+  }
+
+  static const double _minZoom = 20;
+  static const double _maxZoom = 2000;
+
+  static Duration _clampDuration(Duration v, Duration min, Duration max) {
+    if (max < min) return min;
+    if (v < min) return min;
+    if (v > max) return max;
+    return v;
   }
 
   /// 重置：取消/丢弃当前录音，回到空闲。
@@ -166,6 +254,10 @@ class RecorderCubit extends Cubit<RecorderState> {
       playback: PlaybackStatus.stopped,
       playbackPosition: Duration.zero,
       playbackDuration: Duration.zero,
+      waveform: null,
+      analyzing: false,
+      trimStart: null,
+      trimEnd: null,
       error: null,
     ));
   }
@@ -177,14 +269,29 @@ class RecorderCubit extends Cubit<RecorderState> {
       return null;
     }
     emit(state.copyWith(busy: true, error: null));
+    String? trimmedPath;
     try {
+      await _stopPreviewInternal();
+
+      // 有裁切时先写出裁切片段，只有它会被转存。
+      final waveform = state.waveform;
+      final sourcePath = (state.hasTrim && waveform != null)
+          ? trimmedPath = await AudioTrimmer.trim(
+              sourcePath: tempPath,
+              waveform: waveform,
+              start: state.effectiveTrimStart,
+              end: state.effectiveTrimEnd,
+            )
+          : tempPath;
+
       // 用户在 UI 里显式选了目录时，优先落到该本地目录；否则用注入的
       // sink（默认落到资源库目录），最后兜底本地默认目录。
       final outputDir = state.options.outputDir;
       final sink = (outputDir != null && outputDir.isNotEmpty)
           ? LocalFileSink(directory: outputDir)
           : (_sink ?? LocalFileSink(directory: outputDir));
-      final saved = await sink.save(File(tempPath), preferredName: preferredName);
+      final saved =
+          await sink.save(File(sourcePath), preferredName: preferredName);
       emit(state.copyWith(
         status: RecorderStatus.saved,
         savedPath: saved,
@@ -194,6 +301,18 @@ class RecorderCubit extends Cubit<RecorderState> {
     } catch (e) {
       emit(state.copyWith(busy: false, error: '保存失败：$e'));
       return null;
+    } finally {
+      await _deleteQuietly(trimmedPath);
+    }
+  }
+
+  Future<void> _deleteQuietly(String? path) async {
+    if (path == null) return;
+    try {
+      final file = File(path);
+      if (await file.exists()) await file.delete();
+    } catch (_) {
+      // 临时文件清理失败不影响保存结果。
     }
   }
 
@@ -219,17 +338,32 @@ class RecorderCubit extends Cubit<RecorderState> {
 
     try {
       final duration = await player.load(path);
-      await player.play();
+      // 从裁切起点起播，让试听结果与最终保存内容一致。
+      final from = state.canTrim ? state.effectiveTrimStart : Duration.zero;
+      await player.playFrom(from);
       _startPlayTicker();
       emit(state.copyWith(
         playback: PlaybackStatus.playing,
         playbackDuration: duration,
-        playbackPosition: Duration.zero,
+        playbackPosition: from,
         error: null,
       ));
     } catch (e) {
       emit(state.copyWith(error: '播放失败：$e'));
     }
+  }
+
+  /// 将播放头移动到指定位置（未在播放时只更新标记位置）。
+  void seekPreview(Duration position) {
+    final clamped = _clampDuration(
+      position,
+      Duration.zero,
+      state.audioDuration,
+    );
+    if (state.isPlaying || state.isPaused) {
+      _player?.seek(clamped);
+    }
+    emit(state.copyWith(playbackPosition: clamped));
   }
 
   /// 暂停预览。
@@ -245,7 +379,7 @@ class RecorderCubit extends Cubit<RecorderState> {
     await _stopPreviewInternal();
     emit(state.copyWith(
       playback: PlaybackStatus.stopped,
-      playbackPosition: Duration.zero,
+      playbackPosition: state.canTrim ? state.effectiveTrimStart : Duration.zero,
     ));
   }
 
@@ -260,21 +394,35 @@ class RecorderCubit extends Cubit<RecorderState> {
 
   void _startPlayTicker() {
     _playTicker?.cancel();
-    _playTicker = Timer.periodic(const Duration(milliseconds: 100), (_) {
+    // 30ms 刷新让播放头移动足够顺滑。
+    _playTicker = Timer.periodic(const Duration(milliseconds: 30), (_) {
       final player = _player;
       if (player == null) return;
+      final resetTo =
+          state.canTrim ? state.effectiveTrimStart : Duration.zero;
       // 自然播放结束：句柄失效。
       if (!player.isActive) {
         _playTicker?.cancel();
         emit(state.copyWith(
           playback: PlaybackStatus.stopped,
-          playbackPosition: Duration.zero,
+          playbackPosition: resetTo,
         ));
         return;
       }
-      if (state.isPlaying) {
-        emit(state.copyWith(playbackPosition: player.position()));
+      if (!state.isPlaying) return;
+
+      final position = player.position();
+      // 到达裁切终点即停，避免试听到会被裁掉的尾部。
+      if (state.canTrim && position >= state.effectiveTrimEnd) {
+        _playTicker?.cancel();
+        unawaited(_stopPreviewInternal());
+        emit(state.copyWith(
+          playback: PlaybackStatus.stopped,
+          playbackPosition: resetTo,
+        ));
+        return;
       }
+      emit(state.copyWith(playbackPosition: position));
     });
   }
 

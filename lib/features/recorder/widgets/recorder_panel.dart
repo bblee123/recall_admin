@@ -4,6 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../cubit/recorder_cubit.dart';
 import '../cubit/recorder_state.dart';
+import 'waveform_editor.dart';
 import 'waveform_view.dart';
 
 /// 可复用录音面板（纯 UI，仅读写注入的 [RecorderCubit]）。
@@ -132,7 +133,8 @@ class _RecorderPanelState extends State<RecorderPanel> {
       case RecorderStatus.recording:
         return '录音中 · 按空格结束';
       case RecorderStatus.stopped:
-        return '已停止 · 可保存';
+        if (state.analyzing) return '正在解析波形…';
+        return state.canTrim ? '已停止 · 可裁切并保存' : '已停止 · 可保存';
       case RecorderStatus.saved:
         return '已保存';
     }
@@ -140,7 +142,7 @@ class _RecorderPanelState extends State<RecorderPanel> {
 
   Widget _body(BuildContext context, RecorderState state) {
     return SizedBox(
-      height: 120,
+      height: 132,
       child: Row(
         children: [
           _toggleButton(context, state),
@@ -155,14 +157,48 @@ class _RecorderPanelState extends State<RecorderPanel> {
                     .withValues(alpha: 0.4),
                 borderRadius: BorderRadius.circular(12),
               ),
-              child: WaveformView(
-                amplitudes: state.amplitudes,
-                active: state.isRecording,
-              ),
+              child: _waveform(context, state),
             ),
           ),
         ],
       ),
+    );
+  }
+
+  /// 录音中显示实时滚动波形；停止后换成可裁切的编辑器。
+  Widget _waveform(BuildContext context, RecorderState state) {
+    if (state.analyzing) {
+      return const Center(
+        child: SizedBox(
+          width: 20,
+          height: 20,
+          child: CircularProgressIndicator(strokeWidth: 2),
+        ),
+      );
+    }
+
+    final waveform = state.waveform;
+    if (waveform == null || state.isRecording) {
+      return WaveformView(
+        amplitudes: state.amplitudes,
+        active: state.isRecording,
+      );
+    }
+
+    final cubit = context.read<RecorderCubit>();
+    return WaveformEditor(
+      waveform: waveform,
+      duration: state.audioDuration,
+      trimStart: state.effectiveTrimStart,
+      trimEnd: state.effectiveTrimEnd,
+      playhead: state.playbackPosition,
+      pxPerSecond: state.pxPerSecond,
+      enableTrim: state.canTrim,
+      followPlayhead: state.isPlaying,
+      onTrimStartChanged: cubit.setTrimStart,
+      onTrimEndChanged: cubit.setTrimEnd,
+      onSeek: cubit.seekPreview,
+      onZoomInitialized: cubit.setZoom,
     );
   }
 
@@ -205,14 +241,10 @@ class _RecorderPanelState extends State<RecorderPanel> {
     );
   }
 
+  /// 试听与裁切控制条。播放进度已合并到波形播放头，这里不再画进度条。
   Widget _preview(BuildContext context, RecorderState state) {
     final cubit = context.read<RecorderCubit>();
     final scheme = Theme.of(context).colorScheme;
-    final total = state.playbackDuration;
-    final pos = state.playbackPosition;
-    final progress = total.inMilliseconds > 0
-        ? (pos.inMilliseconds / total.inMilliseconds).clamp(0.0, 1.0)
-        : 0.0;
     final playing = state.isPlaying;
 
     return Container(
@@ -221,48 +253,123 @@ class _RecorderPanelState extends State<RecorderPanel> {
         color: scheme.surfaceContainerHighest.withValues(alpha: 0.4),
         borderRadius: BorderRadius.circular(12),
       ),
-      child: Row(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
         children: [
-          IconButton(
-            tooltip: playing ? '暂停' : '播放',
-            icon: Icon(playing
-                ? Icons.pause_circle_filled
-                : Icons.play_circle_fill),
-            iconSize: 34,
-            color: scheme.primary,
-            onPressed: () =>
-                playing ? cubit.pausePreview() : cubit.playPreview(),
+          Row(
+            children: [
+              IconButton(
+                tooltip: playing ? '暂停' : '播放',
+                icon: Icon(playing
+                    ? Icons.pause_circle_filled
+                    : Icons.play_circle_fill),
+                iconSize: 34,
+                color: scheme.primary,
+                onPressed: () =>
+                    playing ? cubit.pausePreview() : cubit.playPreview(),
+              ),
+              IconButton(
+                tooltip: '停止',
+                icon: const Icon(Icons.stop_circle_outlined),
+                iconSize: 30,
+                onPressed: (state.isPlaying || state.isPaused)
+                    ? () => cubit.stopPreview()
+                    : null,
+              ),
+              const SizedBox(width: 8),
+              Expanded(child: _trimInfo(context, state)),
+              _zoomControls(context, state, cubit),
+            ],
           ),
-          IconButton(
-            tooltip: '停止',
-            icon: const Icon(Icons.stop_circle_outlined),
-            iconSize: 30,
-            onPressed: (state.isPlaying || state.isPaused)
-                ? () => cubit.stopPreview()
-                : null,
-          ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
+          if (!state.codecSupportsTrim) ...[
+            const SizedBox(height: 4),
+            Row(
               children: [
-                LinearProgressIndicator(
-                  value: progress,
-                  minHeight: 6,
-                  borderRadius: BorderRadius.circular(3),
-                  backgroundColor: scheme.outlineVariant,
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  '试听（未保存）  ${_fmt(pos)} / ${_fmt(total)}',
-                  style: Theme.of(context).textTheme.bodySmall,
+                Icon(Icons.info_outline, size: 14, color: scheme.outline),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: Text(
+                    '${state.options.codec.label} 为压缩格式，暂不支持裁切；'
+                    '需要裁切请选择 WAV 或 PCM。',
+                    style: Theme.of(context)
+                        .textTheme
+                        .bodySmall
+                        ?.copyWith(color: scheme.outline),
+                  ),
                 ),
               ],
             ),
-          ),
+          ],
         ],
       ),
+    );
+  }
+
+  Widget _trimInfo(BuildContext context, RecorderState state) {
+    final theme = Theme.of(context);
+    if (!state.canTrim) {
+      return Text(
+        '试听（未保存）  ${_fmt(state.playbackPosition)} / '
+        '${_fmt(state.audioDuration)}',
+        style: theme.textTheme.bodySmall,
+      );
+    }
+
+    final tooShort = !state.trimRangeValid;
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          '${_fmt(state.playbackPosition)} / ${_fmt(state.audioDuration)}',
+          style: theme.textTheme.bodySmall,
+        ),
+        Text(
+          state.hasTrim
+              ? '裁切 ${_fmt(state.effectiveTrimStart)} ~ '
+                  '${_fmt(state.effectiveTrimEnd)}  '
+                  '(保留 ${_fmt(state.trimmedDuration)})'
+              : '拖拽波形首尾可裁切',
+          style: theme.textTheme.bodySmall?.copyWith(
+            color: tooShort
+                ? theme.colorScheme.error
+                : (state.hasTrim
+                    ? theme.colorScheme.primary
+                    : theme.colorScheme.outline),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _zoomControls(
+    BuildContext context,
+    RecorderState state,
+    RecorderCubit cubit,
+  ) {
+    final zoom = state.pxPerSecond;
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        IconButton(
+          tooltip: '缩小',
+          icon: const Icon(Icons.zoom_out),
+          iconSize: 20,
+          onPressed: zoom > 0 ? () => cubit.setZoom(zoom / 1.6) : null,
+        ),
+        IconButton(
+          tooltip: '放大',
+          icon: const Icon(Icons.zoom_in),
+          iconSize: 20,
+          onPressed: zoom > 0 ? () => cubit.setZoom(zoom * 1.6) : null,
+        ),
+        IconButton(
+          tooltip: '重置裁切',
+          icon: const Icon(Icons.settings_backup_restore),
+          iconSize: 20,
+          onPressed: state.hasTrim ? cubit.resetTrim : null,
+        ),
+      ],
     );
   }
 

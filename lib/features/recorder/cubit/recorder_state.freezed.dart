@@ -25,7 +25,12 @@ mixin _$RecorderState {
  bool get busy;/// 预览播放阶段。
  PlaybackStatus get playback;/// 预览播放当前位置。
  Duration get playbackPosition;/// 预览录音总时长。
- Duration get playbackDuration; String? get error;
+ Duration get playbackDuration;/// 停止后从文件解码出的完整波形包络（裁切与播放头的依据）。
+ WaveformData? get waveform;/// 是否正在解析波形。
+ bool get analyzing;/// 裁切区间起点（null 表示尚未初始化）。
+ Duration? get trimStart;/// 裁切区间终点。
+ Duration? get trimEnd;/// 波形横向缩放：每秒占多少像素。
+ double get pxPerSecond; String? get error;
 /// Create a copy of RecorderState
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -36,16 +41,16 @@ $RecorderStateCopyWith<RecorderState> get copyWith => _$RecorderStateCopyWithImp
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is RecorderState&&(identical(other.status, status) || other.status == status)&&(identical(other.options, options) || other.options == options)&&const DeepCollectionEquality().equals(other.devices, devices)&&(identical(other.elapsed, elapsed) || other.elapsed == elapsed)&&const DeepCollectionEquality().equals(other.amplitudes, amplitudes)&&(identical(other.effectiveSampleRate, effectiveSampleRate) || other.effectiveSampleRate == effectiveSampleRate)&&(identical(other.tempPath, tempPath) || other.tempPath == tempPath)&&(identical(other.savedPath, savedPath) || other.savedPath == savedPath)&&(identical(other.hasPermission, hasPermission) || other.hasPermission == hasPermission)&&(identical(other.busy, busy) || other.busy == busy)&&(identical(other.playback, playback) || other.playback == playback)&&(identical(other.playbackPosition, playbackPosition) || other.playbackPosition == playbackPosition)&&(identical(other.playbackDuration, playbackDuration) || other.playbackDuration == playbackDuration)&&(identical(other.error, error) || other.error == error));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is RecorderState&&(identical(other.status, status) || other.status == status)&&(identical(other.options, options) || other.options == options)&&const DeepCollectionEquality().equals(other.devices, devices)&&(identical(other.elapsed, elapsed) || other.elapsed == elapsed)&&const DeepCollectionEquality().equals(other.amplitudes, amplitudes)&&(identical(other.effectiveSampleRate, effectiveSampleRate) || other.effectiveSampleRate == effectiveSampleRate)&&(identical(other.tempPath, tempPath) || other.tempPath == tempPath)&&(identical(other.savedPath, savedPath) || other.savedPath == savedPath)&&(identical(other.hasPermission, hasPermission) || other.hasPermission == hasPermission)&&(identical(other.busy, busy) || other.busy == busy)&&(identical(other.playback, playback) || other.playback == playback)&&(identical(other.playbackPosition, playbackPosition) || other.playbackPosition == playbackPosition)&&(identical(other.playbackDuration, playbackDuration) || other.playbackDuration == playbackDuration)&&(identical(other.waveform, waveform) || other.waveform == waveform)&&(identical(other.analyzing, analyzing) || other.analyzing == analyzing)&&(identical(other.trimStart, trimStart) || other.trimStart == trimStart)&&(identical(other.trimEnd, trimEnd) || other.trimEnd == trimEnd)&&(identical(other.pxPerSecond, pxPerSecond) || other.pxPerSecond == pxPerSecond)&&(identical(other.error, error) || other.error == error));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,status,options,const DeepCollectionEquality().hash(devices),elapsed,const DeepCollectionEquality().hash(amplitudes),effectiveSampleRate,tempPath,savedPath,hasPermission,busy,playback,playbackPosition,playbackDuration,error);
+int get hashCode => Object.hashAll([runtimeType,status,options,const DeepCollectionEquality().hash(devices),elapsed,const DeepCollectionEquality().hash(amplitudes),effectiveSampleRate,tempPath,savedPath,hasPermission,busy,playback,playbackPosition,playbackDuration,waveform,analyzing,trimStart,trimEnd,pxPerSecond,error]);
 
 @override
 String toString() {
-  return 'RecorderState(status: $status, options: $options, devices: $devices, elapsed: $elapsed, amplitudes: $amplitudes, effectiveSampleRate: $effectiveSampleRate, tempPath: $tempPath, savedPath: $savedPath, hasPermission: $hasPermission, busy: $busy, playback: $playback, playbackPosition: $playbackPosition, playbackDuration: $playbackDuration, error: $error)';
+  return 'RecorderState(status: $status, options: $options, devices: $devices, elapsed: $elapsed, amplitudes: $amplitudes, effectiveSampleRate: $effectiveSampleRate, tempPath: $tempPath, savedPath: $savedPath, hasPermission: $hasPermission, busy: $busy, playback: $playback, playbackPosition: $playbackPosition, playbackDuration: $playbackDuration, waveform: $waveform, analyzing: $analyzing, trimStart: $trimStart, trimEnd: $trimEnd, pxPerSecond: $pxPerSecond, error: $error)';
 }
 
 
@@ -56,7 +61,7 @@ abstract mixin class $RecorderStateCopyWith<$Res>  {
   factory $RecorderStateCopyWith(RecorderState value, $Res Function(RecorderState) _then) = _$RecorderStateCopyWithImpl;
 @useResult
 $Res call({
- RecorderStatus status, RecorderOptions options, List<InputDevice> devices, Duration elapsed, List<double> amplitudes, int? effectiveSampleRate, String? tempPath, String? savedPath, bool? hasPermission, bool busy, PlaybackStatus playback, Duration playbackPosition, Duration playbackDuration, String? error
+ RecorderStatus status, RecorderOptions options, List<InputDevice> devices, Duration elapsed, List<double> amplitudes, int? effectiveSampleRate, String? tempPath, String? savedPath, bool? hasPermission, bool busy, PlaybackStatus playback, Duration playbackPosition, Duration playbackDuration, WaveformData? waveform, bool analyzing, Duration? trimStart, Duration? trimEnd, double pxPerSecond, String? error
 });
 
 
@@ -73,7 +78,7 @@ class _$RecorderStateCopyWithImpl<$Res>
 
 /// Create a copy of RecorderState
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? status = null,Object? options = null,Object? devices = null,Object? elapsed = null,Object? amplitudes = null,Object? effectiveSampleRate = freezed,Object? tempPath = freezed,Object? savedPath = freezed,Object? hasPermission = freezed,Object? busy = null,Object? playback = null,Object? playbackPosition = null,Object? playbackDuration = null,Object? error = freezed,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? status = null,Object? options = null,Object? devices = null,Object? elapsed = null,Object? amplitudes = null,Object? effectiveSampleRate = freezed,Object? tempPath = freezed,Object? savedPath = freezed,Object? hasPermission = freezed,Object? busy = null,Object? playback = null,Object? playbackPosition = null,Object? playbackDuration = null,Object? waveform = freezed,Object? analyzing = null,Object? trimStart = freezed,Object? trimEnd = freezed,Object? pxPerSecond = null,Object? error = freezed,}) {
   return _then(RecorderState(
 status: null == status ? _self.status : status // ignore: cast_nullable_to_non_nullable
 as RecorderStatus,options: null == options ? _self.options : options // ignore: cast_nullable_to_non_nullable
@@ -88,7 +93,12 @@ as bool?,busy: null == busy ? _self.busy : busy // ignore: cast_nullable_to_non_
 as bool,playback: null == playback ? _self.playback : playback // ignore: cast_nullable_to_non_nullable
 as PlaybackStatus,playbackPosition: null == playbackPosition ? _self.playbackPosition : playbackPosition // ignore: cast_nullable_to_non_nullable
 as Duration,playbackDuration: null == playbackDuration ? _self.playbackDuration : playbackDuration // ignore: cast_nullable_to_non_nullable
-as Duration,error: freezed == error ? _self.error : error // ignore: cast_nullable_to_non_nullable
+as Duration,waveform: freezed == waveform ? _self.waveform : waveform // ignore: cast_nullable_to_non_nullable
+as WaveformData?,analyzing: null == analyzing ? _self.analyzing : analyzing // ignore: cast_nullable_to_non_nullable
+as bool,trimStart: freezed == trimStart ? _self.trimStart : trimStart // ignore: cast_nullable_to_non_nullable
+as Duration?,trimEnd: freezed == trimEnd ? _self.trimEnd : trimEnd // ignore: cast_nullable_to_non_nullable
+as Duration?,pxPerSecond: null == pxPerSecond ? _self.pxPerSecond : pxPerSecond // ignore: cast_nullable_to_non_nullable
+as double,error: freezed == error ? _self.error : error // ignore: cast_nullable_to_non_nullable
 as String?,
   ));
 }
@@ -174,10 +184,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( RecorderStatus status,  RecorderOptions options,  List<InputDevice> devices,  Duration elapsed,  List<double> amplitudes,  int? effectiveSampleRate,  String? tempPath,  String? savedPath,  bool? hasPermission,  bool busy,  PlaybackStatus playback,  Duration playbackPosition,  Duration playbackDuration,  String? error)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( RecorderStatus status,  RecorderOptions options,  List<InputDevice> devices,  Duration elapsed,  List<double> amplitudes,  int? effectiveSampleRate,  String? tempPath,  String? savedPath,  bool? hasPermission,  bool busy,  PlaybackStatus playback,  Duration playbackPosition,  Duration playbackDuration,  WaveformData? waveform,  bool analyzing,  Duration? trimStart,  Duration? trimEnd,  double pxPerSecond,  String? error)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _RecorderState() when $default != null:
-return $default(_that.status,_that.options,_that.devices,_that.elapsed,_that.amplitudes,_that.effectiveSampleRate,_that.tempPath,_that.savedPath,_that.hasPermission,_that.busy,_that.playback,_that.playbackPosition,_that.playbackDuration,_that.error);case _:
+return $default(_that.status,_that.options,_that.devices,_that.elapsed,_that.amplitudes,_that.effectiveSampleRate,_that.tempPath,_that.savedPath,_that.hasPermission,_that.busy,_that.playback,_that.playbackPosition,_that.playbackDuration,_that.waveform,_that.analyzing,_that.trimStart,_that.trimEnd,_that.pxPerSecond,_that.error);case _:
   return orElse();
 
 }
@@ -195,10 +205,10 @@ return $default(_that.status,_that.options,_that.devices,_that.elapsed,_that.amp
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( RecorderStatus status,  RecorderOptions options,  List<InputDevice> devices,  Duration elapsed,  List<double> amplitudes,  int? effectiveSampleRate,  String? tempPath,  String? savedPath,  bool? hasPermission,  bool busy,  PlaybackStatus playback,  Duration playbackPosition,  Duration playbackDuration,  String? error)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( RecorderStatus status,  RecorderOptions options,  List<InputDevice> devices,  Duration elapsed,  List<double> amplitudes,  int? effectiveSampleRate,  String? tempPath,  String? savedPath,  bool? hasPermission,  bool busy,  PlaybackStatus playback,  Duration playbackPosition,  Duration playbackDuration,  WaveformData? waveform,  bool analyzing,  Duration? trimStart,  Duration? trimEnd,  double pxPerSecond,  String? error)  $default,) {final _that = this;
 switch (_that) {
 case _RecorderState():
-return $default(_that.status,_that.options,_that.devices,_that.elapsed,_that.amplitudes,_that.effectiveSampleRate,_that.tempPath,_that.savedPath,_that.hasPermission,_that.busy,_that.playback,_that.playbackPosition,_that.playbackDuration,_that.error);case _:
+return $default(_that.status,_that.options,_that.devices,_that.elapsed,_that.amplitudes,_that.effectiveSampleRate,_that.tempPath,_that.savedPath,_that.hasPermission,_that.busy,_that.playback,_that.playbackPosition,_that.playbackDuration,_that.waveform,_that.analyzing,_that.trimStart,_that.trimEnd,_that.pxPerSecond,_that.error);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -215,10 +225,10 @@ return $default(_that.status,_that.options,_that.devices,_that.elapsed,_that.amp
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( RecorderStatus status,  RecorderOptions options,  List<InputDevice> devices,  Duration elapsed,  List<double> amplitudes,  int? effectiveSampleRate,  String? tempPath,  String? savedPath,  bool? hasPermission,  bool busy,  PlaybackStatus playback,  Duration playbackPosition,  Duration playbackDuration,  String? error)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( RecorderStatus status,  RecorderOptions options,  List<InputDevice> devices,  Duration elapsed,  List<double> amplitudes,  int? effectiveSampleRate,  String? tempPath,  String? savedPath,  bool? hasPermission,  bool busy,  PlaybackStatus playback,  Duration playbackPosition,  Duration playbackDuration,  WaveformData? waveform,  bool analyzing,  Duration? trimStart,  Duration? trimEnd,  double pxPerSecond,  String? error)?  $default,) {final _that = this;
 switch (_that) {
 case _RecorderState() when $default != null:
-return $default(_that.status,_that.options,_that.devices,_that.elapsed,_that.amplitudes,_that.effectiveSampleRate,_that.tempPath,_that.savedPath,_that.hasPermission,_that.busy,_that.playback,_that.playbackPosition,_that.playbackDuration,_that.error);case _:
+return $default(_that.status,_that.options,_that.devices,_that.elapsed,_that.amplitudes,_that.effectiveSampleRate,_that.tempPath,_that.savedPath,_that.hasPermission,_that.busy,_that.playback,_that.playbackPosition,_that.playbackDuration,_that.waveform,_that.analyzing,_that.trimStart,_that.trimEnd,_that.pxPerSecond,_that.error);case _:
   return null;
 
 }
@@ -230,7 +240,7 @@ return $default(_that.status,_that.options,_that.devices,_that.elapsed,_that.amp
 
 
 class _RecorderState extends RecorderState {
-  const _RecorderState({this.status = RecorderStatus.idle, this.options = const RecorderOptions(),  List<InputDevice> devices = const <InputDevice>[], this.elapsed = Duration.zero,  List<double> amplitudes = const <double>[], this.effectiveSampleRate, this.tempPath, this.savedPath, this.hasPermission, this.busy = false, this.playback = PlaybackStatus.stopped, this.playbackPosition = Duration.zero, this.playbackDuration = Duration.zero, this.error}): _devices = devices,_amplitudes = amplitudes,super._();
+  const _RecorderState({this.status = RecorderStatus.idle, this.options = const RecorderOptions(),  List<InputDevice> devices = const <InputDevice>[], this.elapsed = Duration.zero,  List<double> amplitudes = const <double>[], this.effectiveSampleRate, this.tempPath, this.savedPath, this.hasPermission, this.busy = false, this.playback = PlaybackStatus.stopped, this.playbackPosition = Duration.zero, this.playbackDuration = Duration.zero, this.waveform, this.analyzing = false, this.trimStart, this.trimEnd, this.pxPerSecond = 0.0, this.error}): _devices = devices,_amplitudes = amplitudes,super._();
   
 
 @override@JsonKey() final  RecorderStatus status;
@@ -269,6 +279,16 @@ class _RecorderState extends RecorderState {
 @override@JsonKey() final  Duration playbackPosition;
 /// 预览录音总时长。
 @override@JsonKey() final  Duration playbackDuration;
+/// 停止后从文件解码出的完整波形包络（裁切与播放头的依据）。
+@override final  WaveformData? waveform;
+/// 是否正在解析波形。
+@override@JsonKey() final  bool analyzing;
+/// 裁切区间起点（null 表示尚未初始化）。
+@override final  Duration? trimStart;
+/// 裁切区间终点。
+@override final  Duration? trimEnd;
+/// 波形横向缩放：每秒占多少像素。
+@override@JsonKey() final  double pxPerSecond;
 @override final  String? error;
 
 /// Create a copy of RecorderState
@@ -281,16 +301,16 @@ _$RecorderStateCopyWith<_RecorderState> get copyWith => __$RecorderStateCopyWith
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _RecorderState&&(identical(other.status, status) || other.status == status)&&(identical(other.options, options) || other.options == options)&&const DeepCollectionEquality().equals(other._devices, _devices)&&(identical(other.elapsed, elapsed) || other.elapsed == elapsed)&&const DeepCollectionEquality().equals(other._amplitudes, _amplitudes)&&(identical(other.effectiveSampleRate, effectiveSampleRate) || other.effectiveSampleRate == effectiveSampleRate)&&(identical(other.tempPath, tempPath) || other.tempPath == tempPath)&&(identical(other.savedPath, savedPath) || other.savedPath == savedPath)&&(identical(other.hasPermission, hasPermission) || other.hasPermission == hasPermission)&&(identical(other.busy, busy) || other.busy == busy)&&(identical(other.playback, playback) || other.playback == playback)&&(identical(other.playbackPosition, playbackPosition) || other.playbackPosition == playbackPosition)&&(identical(other.playbackDuration, playbackDuration) || other.playbackDuration == playbackDuration)&&(identical(other.error, error) || other.error == error));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _RecorderState&&(identical(other.status, status) || other.status == status)&&(identical(other.options, options) || other.options == options)&&const DeepCollectionEquality().equals(other._devices, _devices)&&(identical(other.elapsed, elapsed) || other.elapsed == elapsed)&&const DeepCollectionEquality().equals(other._amplitudes, _amplitudes)&&(identical(other.effectiveSampleRate, effectiveSampleRate) || other.effectiveSampleRate == effectiveSampleRate)&&(identical(other.tempPath, tempPath) || other.tempPath == tempPath)&&(identical(other.savedPath, savedPath) || other.savedPath == savedPath)&&(identical(other.hasPermission, hasPermission) || other.hasPermission == hasPermission)&&(identical(other.busy, busy) || other.busy == busy)&&(identical(other.playback, playback) || other.playback == playback)&&(identical(other.playbackPosition, playbackPosition) || other.playbackPosition == playbackPosition)&&(identical(other.playbackDuration, playbackDuration) || other.playbackDuration == playbackDuration)&&(identical(other.waveform, waveform) || other.waveform == waveform)&&(identical(other.analyzing, analyzing) || other.analyzing == analyzing)&&(identical(other.trimStart, trimStart) || other.trimStart == trimStart)&&(identical(other.trimEnd, trimEnd) || other.trimEnd == trimEnd)&&(identical(other.pxPerSecond, pxPerSecond) || other.pxPerSecond == pxPerSecond)&&(identical(other.error, error) || other.error == error));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,status,options,const DeepCollectionEquality().hash(_devices),elapsed,const DeepCollectionEquality().hash(_amplitudes),effectiveSampleRate,tempPath,savedPath,hasPermission,busy,playback,playbackPosition,playbackDuration,error);
+int get hashCode => Object.hashAll([runtimeType,status,options,const DeepCollectionEquality().hash(_devices),elapsed,const DeepCollectionEquality().hash(_amplitudes),effectiveSampleRate,tempPath,savedPath,hasPermission,busy,playback,playbackPosition,playbackDuration,waveform,analyzing,trimStart,trimEnd,pxPerSecond,error]);
 
 @override
 String toString() {
-  return 'RecorderState(status: $status, options: $options, devices: $devices, elapsed: $elapsed, amplitudes: $amplitudes, effectiveSampleRate: $effectiveSampleRate, tempPath: $tempPath, savedPath: $savedPath, hasPermission: $hasPermission, busy: $busy, playback: $playback, playbackPosition: $playbackPosition, playbackDuration: $playbackDuration, error: $error)';
+  return 'RecorderState(status: $status, options: $options, devices: $devices, elapsed: $elapsed, amplitudes: $amplitudes, effectiveSampleRate: $effectiveSampleRate, tempPath: $tempPath, savedPath: $savedPath, hasPermission: $hasPermission, busy: $busy, playback: $playback, playbackPosition: $playbackPosition, playbackDuration: $playbackDuration, waveform: $waveform, analyzing: $analyzing, trimStart: $trimStart, trimEnd: $trimEnd, pxPerSecond: $pxPerSecond, error: $error)';
 }
 
 
@@ -301,7 +321,7 @@ abstract mixin class _$RecorderStateCopyWith<$Res> implements $RecorderStateCopy
   factory _$RecorderStateCopyWith(_RecorderState value, $Res Function(_RecorderState) _then) = __$RecorderStateCopyWithImpl;
 @override @useResult
 $Res call({
- RecorderStatus status, RecorderOptions options, List<InputDevice> devices, Duration elapsed, List<double> amplitudes, int? effectiveSampleRate, String? tempPath, String? savedPath, bool? hasPermission, bool busy, PlaybackStatus playback, Duration playbackPosition, Duration playbackDuration, String? error
+ RecorderStatus status, RecorderOptions options, List<InputDevice> devices, Duration elapsed, List<double> amplitudes, int? effectiveSampleRate, String? tempPath, String? savedPath, bool? hasPermission, bool busy, PlaybackStatus playback, Duration playbackPosition, Duration playbackDuration, WaveformData? waveform, bool analyzing, Duration? trimStart, Duration? trimEnd, double pxPerSecond, String? error
 });
 
 
@@ -318,7 +338,7 @@ class __$RecorderStateCopyWithImpl<$Res>
 
 /// Create a copy of RecorderState
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? status = null,Object? options = null,Object? devices = null,Object? elapsed = null,Object? amplitudes = null,Object? effectiveSampleRate = freezed,Object? tempPath = freezed,Object? savedPath = freezed,Object? hasPermission = freezed,Object? busy = null,Object? playback = null,Object? playbackPosition = null,Object? playbackDuration = null,Object? error = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? status = null,Object? options = null,Object? devices = null,Object? elapsed = null,Object? amplitudes = null,Object? effectiveSampleRate = freezed,Object? tempPath = freezed,Object? savedPath = freezed,Object? hasPermission = freezed,Object? busy = null,Object? playback = null,Object? playbackPosition = null,Object? playbackDuration = null,Object? waveform = freezed,Object? analyzing = null,Object? trimStart = freezed,Object? trimEnd = freezed,Object? pxPerSecond = null,Object? error = freezed,}) {
   return _then(_RecorderState(
 status: null == status ? _self.status : status // ignore: cast_nullable_to_non_nullable
 as RecorderStatus,options: null == options ? _self.options : options // ignore: cast_nullable_to_non_nullable
@@ -333,7 +353,12 @@ as bool?,busy: null == busy ? _self.busy : busy // ignore: cast_nullable_to_non_
 as bool,playback: null == playback ? _self.playback : playback // ignore: cast_nullable_to_non_nullable
 as PlaybackStatus,playbackPosition: null == playbackPosition ? _self.playbackPosition : playbackPosition // ignore: cast_nullable_to_non_nullable
 as Duration,playbackDuration: null == playbackDuration ? _self.playbackDuration : playbackDuration // ignore: cast_nullable_to_non_nullable
-as Duration,error: freezed == error ? _self.error : error // ignore: cast_nullable_to_non_nullable
+as Duration,waveform: freezed == waveform ? _self.waveform : waveform // ignore: cast_nullable_to_non_nullable
+as WaveformData?,analyzing: null == analyzing ? _self.analyzing : analyzing // ignore: cast_nullable_to_non_nullable
+as bool,trimStart: freezed == trimStart ? _self.trimStart : trimStart // ignore: cast_nullable_to_non_nullable
+as Duration?,trimEnd: freezed == trimEnd ? _self.trimEnd : trimEnd // ignore: cast_nullable_to_non_nullable
+as Duration?,pxPerSecond: null == pxPerSecond ? _self.pxPerSecond : pxPerSecond // ignore: cast_nullable_to_non_nullable
+as double,error: freezed == error ? _self.error : error // ignore: cast_nullable_to_non_nullable
 as String?,
   ));
 }

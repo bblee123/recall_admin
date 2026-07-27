@@ -37,6 +37,13 @@ enum RecorderCodec {
 
   /// 是否为有损编码器（有损才需要 bitRate）。
   bool get isLossy => this == RecorderCodec.aacLc;
+
+  /// 是否支持波形裁切。
+  ///
+  /// 裁切按字节切 PCM、不重编码，因此只有未压缩格式可用；
+  /// FLAC / AAC 需要重新编码，暂不支持。
+  bool get supportsTrim =>
+      this == RecorderCodec.wav || this == RecorderCodec.pcm16;
 }
 
 /// 录音配置（不可变）。默认追求清晰度：WAV / 48kHz / 单声道。
