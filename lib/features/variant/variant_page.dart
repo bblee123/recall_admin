@@ -1,7 +1,11 @@
+import 'dart:io';
+
 import 'package:data_table_2/data_table_2.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:oktoast/oktoast.dart';
+import 'package:recall_admin/features/recorder/recorder_dialog.dart';
+import 'package:recall_admin/features/recorder/service/recorder_options.dart';
 import 'package:recall_admin/utils/responsive.dart';
 
 import '../../core/audio/myenc_audio_service.dart';
@@ -97,15 +101,43 @@ class _VariantViewState extends State<_VariantView> {
     }
   }
 
-  Future<void> _generate(Variant v) async {
+  Future<void> _openRecorder(Variant v) async {
     final cubit = context.read<VariantCubit>();
+    final path = await showRecorderDialog(
+      context,
+      suggestName: '${v.charText}_${v.id}',
+      defaults: const RecorderOptions(
+        sampleRate: SampleRateTier.rate48k,
+        codec: RecorderCodec.wav,
+        numChannels: 1,
+      ),
+    );
+
+    if (!mounted) return;
+    if (path == null) {
+      showToast('已取消录音');
+      return;
+    }
+    print(path);
+    final file = File(path);
     try {
-      await cubit.generateAudio(v);
-      await cubit.load();
-      showToast('${v.charText}_${v.pinyinRaw} 生成成功');
+      await cubit.uploadAudio(v, file);
+      showToast('录音已上传成功');
     } on ApiException catch (e) {
       showToast(e.message);
     }
+    // showToast('录音已保存');
+  }
+
+  Future<void> _generate(Variant v) async {
+    // final cubit = context.read<VariantCubit>();
+    // try {
+    //   await cubit.generateAudio(v);
+    //   await cubit.load();
+    //   showToast('${v.charText}_${v.pinyinRaw} 生成成功');
+    // } on ApiException catch (e) {
+    //   showToast(e.message);
+    // }
   }
 
   Future<void> _batch() async {
@@ -216,9 +248,9 @@ class _VariantViewState extends State<_VariantView> {
                           state: state,
                           onSelect: cubit.toggleSelect,
                           onPlay: _play,
-                          onUpload: _upload,
+                          onUpload: _openRecorder,
                           onDelete: _delete,
-                          onGenerate: _generate,
+                          // onGenerate: _openRecorder,
                           onEdit: (v) => _edit(initial: v),
                         ),
                 ),
@@ -246,7 +278,7 @@ class _VariantTable extends StatelessWidget {
     required this.onPlay,
     required this.onUpload,
     required this.onDelete,
-    required this.onGenerate,
+    this.onGenerate,
     required this.onEdit,
   });
 
@@ -255,7 +287,7 @@ class _VariantTable extends StatelessWidget {
   final ValueChanged<Variant> onPlay;
   final ValueChanged<Variant> onUpload;
   final ValueChanged<Variant> onDelete;
-  final ValueChanged<Variant> onGenerate;
+  final ValueChanged<Variant>? onGenerate;
   final ValueChanged<Variant> onEdit;
 
   @override
@@ -339,14 +371,14 @@ class _AudioCell extends StatelessWidget {
     required this.onPlay,
     required this.onUpload,
     required this.onDelete,
-    required this.onGenerate,
+    this.onGenerate,
   });
 
   final Variant variant;
   final ValueChanged<Variant> onPlay;
   final ValueChanged<Variant> onUpload;
   final ValueChanged<Variant> onDelete;
-  final ValueChanged<Variant> onGenerate;
+  final ValueChanged<Variant>? onGenerate;
 
   @override
   Widget build(BuildContext context) {
@@ -375,11 +407,17 @@ class _AudioCell extends StatelessWidget {
             icon: const Icon(Icons.upload_file, size: 18),
             onPressed: () => onUpload(variant),
           ),
-        IconButton(
-          tooltip: 'AI 生成',
-          icon: const Icon(Icons.auto_awesome, color: Colors.orange, size: 18),
-          onPressed: () => onGenerate(variant),
-        ),
+
+        if (onGenerate != null)
+          IconButton(
+            tooltip: 'AI 生成',
+            icon: const Icon(
+              Icons.auto_awesome,
+              color: Colors.orange,
+              size: 18,
+            ),
+            onPressed: () => onGenerate?.call(variant),
+          ),
       ],
     );
   }
