@@ -13,6 +13,7 @@ Word _$WordFromJson(Map<String, dynamic> json) => Word(
   pinyinRaw: json['pinyin_raw'] as String?,
   translation: json['translation'] as String?,
   hasPolyphone: (json['has_polyphone'] as num?)?.toInt() ?? 0,
+  hasAudio: (json['has_audio'] as num?)?.toInt() ?? 0,
   charMetas:
       (json['charMetas'] as List<dynamic>?)
           ?.map((e) => CharMeta.fromJson(e as Map<String, dynamic>))
@@ -30,6 +31,7 @@ Map<String, dynamic> _$WordToJson(Word instance) => <String, dynamic>{
   'pinyin_raw': instance.pinyinRaw,
   'translation': instance.translation,
   'has_polyphone': instance.hasPolyphone,
+  'has_audio': instance.hasAudio,
   'charMetas': instance.charMetas.map((e) => e.toJson()).toList(),
   'selectWords': instance.selectWords?.map((e) => e.toJson()).toList(),
 };

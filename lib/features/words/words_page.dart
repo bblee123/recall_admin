@@ -1,6 +1,11 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:oktoast/oktoast.dart';
+import 'package:recall_admin/core/audio/audio_service.dart';
+import 'package:recall_admin/features/recorder/recorder_dialog.dart';
+import 'package:recall_admin/features/recorder/service/recorder_options.dart';
 
 import '../../core/network/api_exception.dart';
 import '../../data/models/word.dart';
@@ -33,6 +38,7 @@ class _WordsView extends StatefulWidget {
 
 class _WordsViewState extends State<_WordsView> {
   final _search = TextEditingController();
+  final R2AudioPlayer _audioPlayer = R2AudioPlayer.instance;
 
   @override
   void dispose() {
@@ -76,6 +82,51 @@ class _WordsViewState extends State<_WordsView> {
     } on ApiException catch (e) {
       showToast(e.message);
     }
+  }
+
+  Future<void> _play(Word w) async {
+    await _audioPlayer.play(
+      "https://pub-f83f97baa906439497f5a72d8696712d.r2.dev/word_audio/${w.id ?? ''}.mp3",
+    );
+    // final cubit = context.read<WordCubit>();
+    // await cubit.playWord(w.id!);
+  }
+
+  Future<void> _openRecorder(Word w) async {
+    final path = await showRecorderDialog(
+      context,
+      suggestName: '${w.id}_${w.text}',
+      defaults: const RecorderOptions(
+        sampleRate: SampleRateTier.rate48k,
+        codec: RecorderCodec.wav,
+        numChannels: 1,
+        outputDir: "/Users/lipengfei/Documents/audio/words",
+      ),
+    );
+
+    if (!mounted) return;
+    if (path == null) {
+      showToast('已取消录音');
+      return;
+    }
+    final file = File(path);
+    await context.read<WordRepository>().uploadAudio(file: file, wordId: w.id!);
+    showToast('上传成功');
+  }
+
+  Future<void> _deleteAudio(Word w) async {
+    // final cubit = context.read<WordCubit>();
+    // try {
+    //   await cubit.deleteAudio(w.id!);
+    //   showToast('删除成功');
+    // } on ApiException catch (e) {
+    //   showToast(e.message);
+    // }
+  }
+
+  @override
+  void initState() {
+    super.initState();
   }
 
   @override
@@ -143,6 +194,9 @@ class _WordsViewState extends State<_WordsView> {
                             items: state.items,
                             onEdit: (w) => _edit(initial: w),
                             onDelete: _delete,
+                            onPlay: _play,
+                            onUpload: _openRecorder,
+                            onDeleteAudio: _deleteAudio,
                           ),
                   ),
                 ),
@@ -167,11 +221,19 @@ class _WordTable extends StatelessWidget {
     required this.items,
     required this.onEdit,
     required this.onDelete,
+    required this.onPlay,
+    required this.onUpload,
+    required this.onDeleteAudio,
+    this.onGenerate,
   });
 
   final List<Word> items;
   final ValueChanged<Word> onEdit;
   final ValueChanged<Word> onDelete;
+  final ValueChanged<Word> onPlay;
+  final ValueChanged<Word> onUpload;
+  final ValueChanged<Word> onDeleteAudio;
+  final ValueChanged<Word>? onGenerate;
 
   @override
   Widget build(BuildContext context) {
@@ -180,6 +242,7 @@ class _WordTable extends StatelessWidget {
         columns: const [
           DataColumn(label: Text('No.')),
           DataColumn(label: Text('词汇')),
+          DataColumn(label: Text('音频')),
           DataColumn(label: Text('拼音')),
           DataColumn(label: Text('原始拼音')),
           DataColumn(label: Text('释义')),
@@ -192,6 +255,14 @@ class _WordTable extends StatelessWidget {
               cells: [
                 DataCell(Text('${i + 1}')),
                 DataCell(Text(items[i].text)),
+                DataCell(
+                  _WordAudioCell(
+                    word: items[i],
+                    onPlay: onPlay,
+                    onUpload: onUpload,
+                    onDelete: onDeleteAudio,
+                  ),
+                ),
                 DataCell(Text(items[i].pinyin ?? '')),
                 DataCell(Text(items[i].pinyinRaw ?? '')),
                 DataCell(
@@ -237,6 +308,64 @@ class _WordTable extends StatelessWidget {
             ),
         ],
       ),
+    );
+  }
+}
+
+class _WordAudioCell extends StatelessWidget {
+  const _WordAudioCell({
+    required this.word,
+    required this.onPlay,
+    required this.onUpload,
+    required this.onDelete,
+    this.onGenerate,
+  });
+
+  final Word word;
+  final ValueChanged<Word> onPlay;
+  final ValueChanged<Word> onUpload;
+  final ValueChanged<Word> onDelete;
+  final ValueChanged<Word>? onGenerate;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        if (word.hasAudio == 1) ...[
+          IconButton(
+            tooltip: '播放',
+            icon: const Icon(Icons.play_circle, color: Colors.green, size: 20),
+            onPressed: () => onPlay(word),
+          ),
+          IconButton(
+            tooltip: '重新上传',
+            icon: const Icon(Icons.refresh, size: 18),
+            onPressed: () => onUpload(word),
+          ),
+          IconButton(
+            tooltip: '删除音频',
+            icon: const Icon(Icons.delete, color: Colors.red, size: 18),
+            onPressed: () => onDelete(word),
+          ),
+        ] else
+          IconButton(
+            tooltip: '上传音频',
+            icon: const Icon(Icons.upload_file, size: 18),
+            onPressed: () => onUpload(word),
+          ),
+
+        if (onGenerate != null)
+          IconButton(
+            tooltip: 'AI 生成',
+            icon: const Icon(
+              Icons.auto_awesome,
+              color: Colors.orange,
+              size: 18,
+            ),
+            onPressed: () => onGenerate?.call(word),
+          ),
+      ],
     );
   }
 }

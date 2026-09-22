@@ -14,6 +14,7 @@ class Word {
     this.pinyinRaw,
     this.translation,
     this.hasPolyphone = 0,
+    this.hasAudio = 0,
     this.charMetas = const <CharMeta>[],
     this.selectWords,
   });
@@ -32,6 +33,10 @@ class Word {
   /// 0=否 1=是。
   @JsonKey(name: 'has_polyphone')
   final int hasPolyphone;
+
+  /// 0=否 1=是。
+  @JsonKey(name: 'has_audio')
+  final int hasAudio;
 
   final List<CharMeta> charMetas;
 

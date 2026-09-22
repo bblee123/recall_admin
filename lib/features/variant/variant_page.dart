@@ -110,6 +110,7 @@ class _VariantViewState extends State<_VariantView> {
         sampleRate: SampleRateTier.rate48k,
         codec: RecorderCodec.wav,
         numChannels: 1,
+        outputDir: "/Users/lipengfei/Documents/audio/singe_txt",
       ),
     );
 
@@ -118,7 +119,6 @@ class _VariantViewState extends State<_VariantView> {
       showToast('已取消录音');
       return;
     }
-    print(path);
     final file = File(path);
     try {
       await cubit.uploadAudio(v, file);

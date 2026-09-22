@@ -1,3 +1,7 @@
+import 'dart:io';
+
+import 'package:dio/dio.dart';
+
 import '../../core/network/dio_client.dart';
 import '../models/word.dart';
 import 'repo_util.dart';
@@ -33,7 +37,10 @@ class WordRepository {
   /// POST /word
   Future<void> createWord(Word word) {
     return guard(() async {
-      final res = await _client.public.post<dynamic>('/word', data: word.toJson());
+      final res = await _client.public.post<dynamic>(
+        '/word',
+        data: word.toJson(),
+      );
       throwIfBodyError(res.data);
     });
   }
@@ -41,7 +48,28 @@ class WordRepository {
   /// PUT /word
   Future<void> updateWord(Word word) {
     return guard(() async {
-      final res = await _client.public.put<dynamic>('/word', data: word.toJson());
+      final res = await _client.public.put<dynamic>(
+        '/word',
+        data: word.toJson(),
+      );
+      throwIfBodyError(res.data);
+    });
+  }
+
+  // required File file,
+  // required int variantId,
+
+  Future<void> uploadAudio({required File file, required int wordId}) {
+    print(file.path);
+    return guard(() async {
+      final form = FormData.fromMap(<String, dynamic>{
+        'id': wordId,
+        'file': await MultipartFile.fromFile(file.path),
+      });
+      final res = await _client.public.post<dynamic>(
+        '/word/upload_audio',
+        data: form,
+      );
       throwIfBodyError(res.data);
     });
   }
@@ -62,9 +90,9 @@ class WordRepository {
         data: <String, dynamic>{'text': text},
       );
       throwIfBodyError(res.data);
-      return asList(res.data)
-          .map((e) => Word.fromJson(asMap(e)))
-          .toList(growable: false);
+      return asList(
+        res.data,
+      ).map((e) => Word.fromJson(asMap(e))).toList(growable: false);
     });
   }
 }
