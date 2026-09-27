@@ -33,7 +33,8 @@ class LocalFileSink implements RecorderSink {
     final baseName = preferredName != null && preferredName.isNotEmpty
         ? _ensureExt(preferredName, ext)
         : p.basename(tempFile.path);
-    final target = _uniquePath(dirPath, baseName);
+    // 替换文件名，避免覆盖已存在文件
+    final target = _uniquePathReplace(dirPath, baseName);
 
     final saved = await tempFile.copy(target);
     return saved.path;
@@ -62,5 +63,9 @@ class LocalFileSink implements RecorderSink {
       i++;
     }
     return candidate;
+  }
+
+  String _uniquePathReplace(String dirPath, String fileName) {
+    return p.join(dirPath, fileName);
   }
 }

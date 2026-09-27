@@ -111,6 +111,7 @@ class _WordsViewState extends State<_WordsView> {
     }
     final file = File(path);
     await context.read<WordRepository>().uploadAudio(file: file, wordId: w.id!);
+    await context.read<WordCubit>().load();
     showToast('上传成功');
   }
 

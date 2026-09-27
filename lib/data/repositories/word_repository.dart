@@ -60,7 +60,6 @@ class WordRepository {
   // required int variantId,
 
   Future<void> uploadAudio({required File file, required int wordId}) {
-    print(file.path);
     return guard(() async {
       final form = FormData.fromMap(<String, dynamic>{
         'id': wordId,

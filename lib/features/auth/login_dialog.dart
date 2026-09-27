@@ -21,8 +21,9 @@ class _LoginDialogState extends State<LoginDialog> {
   final _emailController = TextEditingController(text: '515656712@qq.com');
   final _passwordController = TextEditingController();
 
-  static final RegExp _emailRegex =
-      RegExp(r'^[a-zA-Z0-9_-]+@[a-zA-Z0-9_-]+(\.[a-zA-Z0-9_-]+)+$');
+  static final RegExp _emailRegex = RegExp(
+    r'^[a-zA-Z0-9_-]+@[a-zA-Z0-9_-]+(\.[a-zA-Z0-9_-]+)+$',
+  );
 
   @override
   void dispose() {
@@ -34,9 +35,11 @@ class _LoginDialogState extends State<LoginDialog> {
   void _submit() {
     if (_formKey.currentState?.validate() ?? false) {
       context.read<AuthCubit>().login(
-            email: _emailController.text.trim(),
-            password: _passwordController.text,
-          );
+        email: _emailController.text.trim(),
+        password: _passwordController.text,
+      );
+
+      _passwordController.text = "";
     }
   }
 
@@ -87,10 +90,15 @@ class _LoginDialogState extends State<LoginDialog> {
                             ],
                           ),
                           const SizedBox(height: 12),
-                          _ReadonlyField(label: 'deviceId', value: cubit.deviceId),
+                          _ReadonlyField(
+                            label: 'deviceId',
+                            value: cubit.deviceId,
+                          ),
                           const SizedBox(height: 8),
                           _ReadonlyField(
-                              label: 'deviceName', value: cubit.deviceName),
+                            label: 'deviceName',
+                            value: cubit.deviceName,
+                          ),
                           const SizedBox(height: 12),
                           TextFormField(
                             controller: _emailController,
@@ -124,7 +132,8 @@ class _LoginDialogState extends State<LoginDialog> {
                                     height: 18,
                                     width: 18,
                                     child: CircularProgressIndicator(
-                                        strokeWidth: 2),
+                                      strokeWidth: 2,
+                                    ),
                                   )
                                 : const Text('登录'),
                           ),
