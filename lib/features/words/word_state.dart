@@ -13,7 +13,7 @@ abstract class WordState with _$WordState {
     @Default(0) int total,
     @Default(1) int page,
     @Default(20) int pageSize,
-    // 1 精确 / 0 模糊
+    // 1 精确词汇 / 0 模糊词汇 / 2 ID搜索
     @Default(1) int searchType,
     @Default('') String searchText,
     String? error,

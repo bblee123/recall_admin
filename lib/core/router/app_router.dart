@@ -50,7 +50,9 @@ GoRouter buildRouter({
           ),
           GoRoute(
             path: '/words',
-            pageBuilder: (c, s) => noTransition(const WordsPage()),
+            pageBuilder: (c, s) => noTransition(
+              WordsPage(wordIds: s.uri.queryParameters['wordIds']),
+            ),
           ),
           GoRoute(
             path: '/recorder-test',

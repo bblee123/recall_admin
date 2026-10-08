@@ -18,27 +18,42 @@ import 'word_state.dart';
 
 /// 词汇管理页（对照 words/index.vue）。
 class WordsPage extends StatelessWidget {
-  const WordsPage({super.key});
+  const WordsPage({super.key, this.wordIds});
+
+  /// 从书籍页带过来的单词 id，逗号分隔。有值时按 ID 搜索。
+  final String? wordIds;
 
   @override
   Widget build(BuildContext context) {
+    final ids = wordIds ?? '';
     return BlocProvider<WordCubit>(
-      create: (context) => WordCubit(context.read<WordRepository>())..load(),
-      child: const _WordsView(),
+      create: (context) => WordCubit(
+        context.read<WordRepository>(),
+        wordIds: ids.isEmpty ? null : ids,
+      )..load(),
+      child: _WordsView(initialSearch: ids),
     );
   }
 }
 
 class _WordsView extends StatefulWidget {
-  const _WordsView();
+  const _WordsView({this.initialSearch = ''});
+
+  final String initialSearch;
 
   @override
   State<_WordsView> createState() => _WordsViewState();
 }
 
 class _WordsViewState extends State<_WordsView> {
-  final _search = TextEditingController();
+  late final TextEditingController _search;
   final R2AudioPlayer _audioPlayer = R2AudioPlayer.instance;
+
+  @override
+  void initState() {
+    super.initState();
+    _search = TextEditingController(text: widget.initialSearch);
+  }
 
   @override
   void dispose() {
@@ -126,11 +141,6 @@ class _WordsViewState extends State<_WordsView> {
   }
 
   @override
-  void initState() {
-    super.initState();
-  }
-
-  @override
   Widget build(BuildContext context) {
     return Scaffold(
       body: Padding(
@@ -145,8 +155,9 @@ class _WordsViewState extends State<_WordsView> {
                   children: [
                     SegmentedButton<int>(
                       segments: const [
-                        ButtonSegment(value: 1, label: Text('精确')),
-                        ButtonSegment(value: 0, label: Text('模糊')),
+                        ButtonSegment(value: 1, label: Text('精确词汇')),
+                        ButtonSegment(value: 0, label: Text('模糊词汇')),
+                        ButtonSegment(value: 2, label: Text('ID搜索')),
                       ],
                       selected: {state.searchType},
                       onSelectionChanged: (s) => cubit.setSearchType(s.first),

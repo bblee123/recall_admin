@@ -7,7 +7,14 @@ import 'word_state.dart';
 
 /// 词汇管理逻辑（对照 words/index.vue + wordDialogHooks）。
 class WordCubit extends Cubit<WordState> {
-  WordCubit(this._repository) : super(const WordState());
+  WordCubit(
+    this._repository, {
+    String? wordIds,
+  }) : super(
+          wordIds != null && wordIds.isNotEmpty
+              ? WordState(searchType: 2, searchText: wordIds)
+              : const WordState(),
+        );
 
   final WordRepository _repository;
 

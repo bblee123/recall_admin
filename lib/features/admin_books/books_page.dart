@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
 import 'package:oktoast/oktoast.dart';
 
 import '../../core/env.dart';
@@ -46,6 +47,20 @@ class _BooksView extends StatelessWidget {
       initial: initial,
       cubit: cubit,
       wordRepository: wordRepo,
+    );
+  }
+
+  void _recordAudio(BuildContext context, Book book) {
+    final wordIds = book.units.expand((unit) => unit.wordIds).toList();
+    if (wordIds.isEmpty) {
+      showToast('这本书还没有词汇');
+      return;
+    }
+    context.go(
+      Uri(
+        path: '/words',
+        queryParameters: {'wordIds': wordIds.join(',')},
+      ).toString(),
     );
   }
 
@@ -230,6 +245,10 @@ class _BooksView extends StatelessWidget {
         DataCell(
           Row(
             children: [
+              TextButton(
+                onPressed: () => _recordAudio(context, b),
+                child: const Text('录制音频'),
+              ),
               TextButton(
                 onPressed: () => _edit(context, initial: b),
                 child: const Text('编辑'),
